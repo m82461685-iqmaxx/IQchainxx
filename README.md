@@ -1,4 +1,3 @@
-
 <div align="center">
   <!-- HUGE LOGO (Full Width, No Box) -->
   <img src="assets/logo.png" alt="IQchain Logo" width="95%" style="max-width: 900px;"/>
@@ -10,6 +9,7 @@
   <p><b>A D V A N C E D   P H I S H I N G   S I M U L A T I O N   &   T U N N E L I N G</b></p>
 
   <p>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License"></a>
     <a href="#"><img src="https://img.shields.io/badge/Version-v0.01-0052cc?style=for-the-badge&logo=git&logoColor=white" alt="Version"></a>
     <a href="#"><img src="https://img.shields.io/badge/Developer-IQmaxx_(Dk)-ff69b4?style=for-the-badge&logo=codeigniter&logoColor=white" alt="Developer"></a>
     <a href="#"><img src="https://img.shields.io/badge/Backend-Active-success?style=for-the-badge&logo=serverless&logoColor=white" alt="Backend"></a>
@@ -19,18 +19,18 @@
   <br>
 
   <!-- LANGUAGES (One by One, Tamil Removed) -->
-  <div style="font-size: 1.3em; font-weight: bold; line-height: 2.2;">
-    <p>IQchain</p>
-    <p>आईक्यू चेन</p>
-    <p>Cadena de IQ</p>
-    <p>Chaîne de QI</p>
-    <p>IQ-Kette</p>
-    <p>IQ链</p>
-    <p>IQチェーン</p>
-    <p>IQцепь</p>
-    <p>آي كيو تشين</p>
-  </div>
-</div>
+  <p align="center">
+   
+  <a href="#"><img src="https://img.shields.io/badge/-IQchain-0052cc?style=for-the-badge&logo=googletranslate&logoColor=white" alt="English"></a>
+  <a href="#"><img src="https://img.shields.io/badge/-आईक्यू_चेन-fb923c?style=for-the-badge&logo=googletranslate&logoColor=white" alt="Hindi"></a>
+  <a href="#"><img src="https://img.shields.io/badge/-Cadena_de_IQ-f87171?style=for-the-badge&logo=googletranslate&logoColor=white" alt="Spanish"></a>
+  <a href="#"><img src="https://img.shields.io/badge/-Chaîne_de_QI-818cf8?style=for-the-badge&logo=googletranslate&logoColor=white" alt="French"></a>
+  <a href="#"><img src="https://img.shields.io/badge/-IQ--Kette-eab308?style=for-the-badge&logo=googletranslate&logoColor=white" alt="German"></a>
+  <a href="#"><img src="https://img.shields.io/badge/-IQ链-ff69b4?style=for-the-badge&logo=googletranslate&logoColor=white" alt="Chinese"></a>
+  <a href="#"><img src="https://img.shields.io/badge/-IQチェーン-22c55e?style=for-the-badge&logo=googletranslate&logoColor=white" alt="Japanese"></a>
+  <a href="#"><img src="https://img.shields.io/badge/-IQцепь-06b6d4?style=for-the-badge&logo=googletranslate&logoColor=white" alt="Russian"></a>
+  <a href="#"><img src="https://img.shields.io/badge/-آي_كيو_تشين-a78bfa?style=for-the-badge&logo=googletranslate&logoColor=white" alt="Arabic"></a>
+</p>
 
 <br><hr><br>
 
@@ -71,7 +71,7 @@
 ---
 
 ## 💡 Project Concept & Idea
-> **Note:** This repository represents a **Project Concept (Idea)** developed for a Hackathon/Competition. The core code has not yet been fully built. This README serves to visualize the exact workflow and architecture of how the tool will operate once developed.
+> **Note:**this is perfect advanced phishing link & also include tunnel module .
 
 **IQchain** is an advanced cross-platform cybersecurity framework designed for security researchers and network engineers. It features a highly optimized architecture with **two primary modules**:
 1. **Phishing Simulation Engine:** Deploy and test phishing scenarios in a controlled environment.
@@ -86,79 +86,80 @@
 
 ---
 
-## 🛠️ Installation & Setup
+## 🛠️ Major Commands Install Tool & Access
 
-```bash
-# 1. Clone the repository
+## This Is On Windows Install & Access
+```
+winget install Python.Python.3.14 --scope user --accept-package-agreements --accept-source-agreements
+winget install --id Git.Git -e --source winget   
+python --version
+git --version
+```
+## This Is On Linux Install & Access
+```if on linux
+sudo apt update && apt upgrade
+apt install git -y
+apt install python3 python3-pip
+python3 --version
+git --version
+```
+## This Is On Termux Install & Access
+```
+termux-setup-storage
+pkg install git -y
+pkg install python
+python --version
+git --version
+```
+## After Set Onces The Python Copy And Paste This
+```
+
 git clone https://github.com/m82461685-iqmaxx/IQchainxx.git
-
-# 2. Navigate into the directory
 cd IQchainxx
-
-# 3. Make the installation script executable
-chmod +x install.sh
-
-# 4. Run the setup
-./install.sh
 ```
-
 ---
 
-🕹️ Exact Execution Workflow (Step-by-Step Procedure)
-
-Step 1: Run the Main Script
-
-Open your terminal and navigate to the core project folder:
-
-```bash
-cd IQchain && python iqchain.py
+## After The Procedure Change Directory:
+```
+ls
+#there to see the templates directory
+cd templates
+```
+#This For Copy The Path To Paste
+```
+realpath Google.html
+#copy the given path of the Google.html --its just example you type any html
+```
+#Copied The Actual Path To Next Procedure
+```
+python iqchain.py
+# this may give to give shown on input
+example .html file path:heare paste path 
+```
+##After The Actual Procedure
+```
+#it give to local host pots id like this
+http://127.0.0.1:8000/
+```
+##Now Run The Next module
+```
+#the cloned repo on current location :IQchain
+python iqchain-tunnel.py
+#its automaticly download cloudflared cli on yours local if don't download that python code is automatically installing 
 ```
 
-Step 2: Open Another Terminal & Choose Template
-
-1. Open a new terminal tab.
-2. Navigate into the templates folder which contains multiple famous login pages:
-   ```bash
-   cd templates
-   ```
-3. Use ls to see the available pages (google.html, xlog.html, facebook.html, insta.html, LinkedIn.html):
-   ```bash
-   ls
-   ```
-4. Choose the template you want and copy its exact path using realpath:
-   ```bash
-   realpath xxx.html
-   ```
-   (This will give you a path like: xx/xx/xx/xx/xx/xxX.html)
-
-Step 3: Configure the Core Module
-
-1. Go back to the first terminal (where python iqchain.py is running).
-2. It will ask for the path. Copy and Paste the path (xxx/xxyy/xx.html) you generated in Step 2 and press Enter.
-3. Once run, the local host will start running at:
-   ```text
-   http://127.0.0.1:8000/
-   ```
-4. Copy this Local Host URL (http://127.0.0.1:8000/).
-
-Step 4: Open Tunnel & Run
-
-1. Open a third terminal tab.
-2. Run the tunnel script:
-   ```bash
-   python iqchain-tunnel.py
-   ```
-3. It will ask for the Local Host. Paste the copied http://127.0.0.1:8000/ and press Enter.
-4. The tool will generate a Public URL.
-
-Step 5: Data Capture
-
-1. Send the generated Public URL to the victim.
-2. When the victim visits and types their data on the page, it is captured.
-3. The captured data will be automatically saved inside the templates folder. It creates a file named exactly after the template you chose in Step 2 (e.g., xxx.data.json). All captured data is stored in this JSON file.
-
----
-
+##Paste The Local Host On Heare
+```
+Local URL (e.g. localhost:3000):here paste the port address
+#the tunnel is openning ,it given the one public url like https:xxyy.com
+```
+#Sent To Victim & Function
+```
+#where the file html file should get the same folder to save Google_data.json
+the last pass is the actual passwords and email or user_name or mobile number
+cd templates
+cat Google_data.json
+```
 🔄 Upcoming Updates & Roadmap
 
 The IQmaxx (Dk) development team is constantly pushing boundaries.
@@ -177,7 +178,7 @@ The IQmaxx (Dk) development team is constantly pushing boundaries.
 
   <p><b>Made with ❤️ by IQmaxx (Dk)</b></p>
 
-https://img.shields.io/badge/Follow-IQmaxx-181717?style=flat-square&logo=github
+ <a href="#"><img src="https://img.shields.io/badge/Follow-IQmaxx-181717?style=flat-square&logo=github&logoColor=white" alt="Follow IQmaxx"></a>
 
 </div>
 ```
