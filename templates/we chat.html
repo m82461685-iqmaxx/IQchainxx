@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>WeChat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── WeChat dual speech bubble logo ─────────────── */
+    .logo {
+      width: 88px;
+      height: 88px;
+      margin-bottom: 18px;
+    }
+    .logo svg { width: 100%; height: 100%; display: block; }
+
+    /* ── Headings ─────────────────────────────────── */
+    .heading {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
+      line-height: 1.3;
+      letter-spacing: -0.2px;
+    }
+    .subheading {
+      font-size: 15px;
+      color: #7a7e83;
+      text-align: center;
+      margin-bottom: 28px;
+      line-height: 1.4;
+    }
+
+    /* ── Screens ──────────────────────────────────── */
+    .screen {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+    .screen.active { display: flex; }
+
+    /* ── Inputs ───────────────────────────────────── */
+    .input-group { width: 100%; margin-bottom: 14px; position: relative; }
+
+    .text-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 15px;
+      font-family: inherit;
+      border: 1px solid #dcdfe6;
+      border-radius: 8px;
+      background: #fff;
+      color: #000;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .text-input::placeholder { color: #a8abb2; }
+    .text-input:focus {
+      outline: none;
+      border-color: #07C160;
+      box-shadow: 0 0 0 3px rgba(7, 193, 96, 0.12);
+    }
+    .text-input.error {
+      border-color: #fa5151;
+      box-shadow: 0 0 0 3px rgba(250, 81, 81, 0.12);
+    }
+
+    .password-wrap { position: relative; }
+    .password-wrap .text-input { padding-right: 48px; }
+
+    .eye-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .eye-btn:hover { background: rgba(0,0,0,.05); }
+    .eye-btn svg { width: 20px; height: 20px; fill: #7a7e83; }
+
+    /* ── Primary button ───────────────────────────── */
+    .primary-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 8px;
+      background: #07C160;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.05s;
+    }
+    .primary-btn:hover { background: #06ad56; }
+    .primary-btn:active { transform: scale(0.99); }
+    .primary-btn:disabled { opacity: 0.55; cursor: default; }
+    .primary-btn:disabled:hover { background: #07C160; }
+
+    /* ── Links ────────────────────────────────────── */
+    .forgot-row {
+      width: 100%;
+      margin-top: 14px;
+      text-align: right;
+    }
+    .forgot-row .text-link {
+      font-size: 13px;
+      color: #7a7e83;
+      font-weight: 500;
+    }
+    .forgot-row .text-link:hover { color: #07C160; }
+
+    .text-link {
+      display: inline-block;
+      font-size: 14px;
+      color: #07C160;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .text-link:hover { text-decoration: underline; }
+
+    .toggle-row {
+      width: 100%;
+      margin-top: 22px;
+      text-align: center;
+    }
+
+    /* ── Divider ──────────────────────────────────── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin: 22px 0 14px;
+      color: #a8abb2;
+      font-size: 13px;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e6eb;
+    }
+
+    /* ── Status ───────────────────────────────────── */
+    .status {
+      width: 100%;
+      min-height: 20px;
+      margin: 2px 0 6px;
+      font-size: 14px;
+      text-align: center;
+      color: #7a7e83;
+    }
+    .status.success { color: #07C160; font-weight: 600; }
+    .status.error   { color: #fa5151; font-weight: 500; }
+
+    /* ── QR Screen ────────────────────────────────── */
+    .qr-box {
+      width: 200px;
+      height: 200px;
+      background: #f7f8fa;
+      border: 1px solid #e5e6eb;
+      border-radius: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .qr-pattern {
+      width: 160px;
+      height: 160px;
+      background:
+        repeating-linear-gradient(0deg, #000 0px, #000 4px, transparent 4px, transparent 8px),
+        repeating-linear-gradient(90deg, #000 0px, #000 4px, transparent 4px, transparent 8px);
+      background-size: 8px 8px;
+      background-blend-mode: multiply;
+      opacity: 0.85;
+    }
+
+    .qr-instructions {
+      list-style: none;
+      counter-reset: step;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    .qr-instructions li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 15px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+      color: #000;
+    }
+    .qr-instructions li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      background: #07C160;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 1px;
+    }
+
+    /* ── Terms ────────────────────────────────────── */
+    .terms {
+      margin-top: 32px;
+      font-size: 12px;
+      color: #a8abb2;
+      text-align: center;
+      line-height: 1.6;
+      max-width: 340px;
+    }
+    .terms a {
+      color: #07C160;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .terms a:hover { text-decoration: underline; }
+
+    /* ── Language ─────────────────────────────────── */
+    .language-selector { margin-top: 18px; position: relative; }
+    .language-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #7a7e83;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .language-btn:hover { background: #f7f8fa; }
+    .language-btn svg { width: 14px; height: 14px; fill: #7a7e83; }
+
+    .language-dropdown {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1px solid #e5e6eb;
+      border-radius: 8px;
+      padding: 6px 0;
+      min-width: 160px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.1);
+      margin-bottom: 6px;
+    }
+    .language-dropdown.show { display: block; }
+    .language-dropdown button {
+      display: block;
+      width: 100%;
+      padding: 8px 16px;
+      background: none;
+      border: none;
+      text-align: left;
+      font-size: 14px;
+      font-family: inherit;
+      color: #000;
+      cursor: pointer;
+    }
+    .language-dropdown button:hover { background: #f7f8fa; }
+
+    @media (max-width: 480px) {
+      .login-container { padding: 28px 18px; }
+      .qr-box { width: 170px; height: 170px; }
+      .qr-pattern { width: 135px; height: 135px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+
+    <!-- WeChat logo: two green speech bubbles -->
+    <div class="logo">
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#07C160" d="M90 32C44.7 32 8 66.6 8 109.5c0 23.3 12.6 44 32.4 58L30 200l33.6-17.6c8.2 2.4 17.1 3.7 26.4 3.7 45.3 0 82-34.6 82-77.6S135.3 32 90 32z"/>
+        <circle cx="66" cy="103" r="9" fill="#fff"/>
+        <circle cx="114" cy="103" r="9" fill="#fff"/>
+        <path fill="#07C160" d="M188 96c-2.8 0-5.6.1-8.4.4 6 11.5 9.4 24.5 9.4 38.6 0 8-1.4 15.7-4 22.8L188 168l-15-8.2c-7.4 6-16.6 9.6-26.5 9.6-8.9 0-17.1-2.4-24.2-6.5-4.7 11.4-13.9 20.7-25.6 26.4 9.6 3.4 20 5.3 30.7 5.3 32.5 0 61.6-17.6 78.9-44.8L232 163l-9.6-31.2C229 118 232 102.5 232 96c0-33.1-24.2-60-54-60z" opacity="0"/>
+      </svg>
+    </div>
+
+    <!-- ═══ SCREEN 1 : LOGIN (default) ═══ -->
+    <div class="screen active" id="loginScreen">
+      <h1 class="heading">Log in to WeChat</h1>
+      <p class="subheading">Enter your phone number or WeChat ID and password</p>
+
+      <!-- Phone number / WeChat ID -->
+      <div class="input-group">
+        <input
+          type="text"
+          class="text-input"
+          id="identifierInput"
+          placeholder="Phone number or WeChat ID"
+          autocomplete="username"
+          spellcheck="false"
+          autocapitalize="none"
+        />
+      </div>
+
+      <!-- Password directly below -->
+      <div class="input-group password-wrap">
+        <input
+          type="password"
+          class="text-input"
+          id="passwordInput"
+          placeholder="Password"
+          autocomplete="current-password"
+        />
+        <button class="eye-btn" id="eyeBtn" type="button" aria-label="Show password">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="forgot-row">
+        <a class="text-link" id="forgotLink">Forgot password?</a>
+      </div>
+
+      <p class="status" id="loginStatus"></p>
+
+      <button class="primary-btn" id="loginBtn">Log In</button>
+
+      <div class="divider">or</div>
+
+      <div class="toggle-row">
+        <a class="text-link" id="showQrLink">Log in by QR code</a>
+      </div>
+
+      <p class="terms">
+        By logging in, you agree to WeChat's
+        <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+      </p>
+    </div>
+
+    <!-- ═══ SCREEN 2 : QR CODE ═══ -->
+    <div class="screen" id="qrScreen">
+      <h1 class="heading">Scan to log in</h1>
+      <p class="subheading">Open WeChat on your phone and scan the code below</p>
+
+      <div class="qr-box">
+        <div class="qr-pattern"></div>
+      </div>
+
+      <ol class="qr-instructions">
+        <li>Open WeChat on your phone</li>
+        <li>Tap <strong>+</strong> in the top right and choose <strong>Scan</strong></li>
+        <li>Point your phone at this screen to log in</li>
+      </ol>
+
+      <div class="toggle-row">
+        <a class="text-link" id="showPhoneLink">Log in with phone number</a>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 3 : FORGOT PASSWORD ═══ -->
+    <div class="screen" id="forgotScreen">
+      <h1 class="heading">Reset your password</h1>
+      <p class="subheading">
+        Enter your phone number or WeChat ID and we'll send you a reset link
+      </p>
+
+      <div class="input-group">
+        <input
+          type="text"
+          class="text-input"
+          id="resetInput"
+          placeholder="Phone number or WeChat ID"
+          spellcheck="false"
+          autocapitalize="none"
+        />
+      </div>
+
+      <p class="status" id="resetStatus"></p>
+
+      <button class="primary-btn" id="resetBtn">Send Reset Link</button>
+
+      <div class="toggle-row">
+        <a class="text-link" id="backToLogin" style="color:#7a7e83;font-weight:500">Back to log in</a>
+      </div>
+    </div>
+
+    <!-- Language selector -->
+    <div class="language-selector">
+      <button class="language-btn" id="languageBtn">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+        English
+      </button>
+      <div class="language-dropdown" id="languageDropdown">
+        <button data-lang="en">English</button>
+        <button data-lang="zh">简体中文</button>
+        <button data-lang="tw">繁體中文</button>
+        <button data-lang="ja">日本語</button>
+        <button data-lang="ko">한국어</button>
+        <button data-lang="es">Español</button>
+        <button data-lang="fr">Français</button>
+        <button data-lang="de">Deutsch</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function() {
+      const loginScreen  = document.getElementById('loginScreen');
+      const qrScreen     = document.getElementById('qrScreen');
+      const forgotScreen = document.getElementById('forgotScreen');
+
+      const identifierInput = document.getElementById('identifierInput');
+      const passwordInput   = document.getElementById('passwordInput');
+      const eyeBtn          = document.getElementById('eyeBtn');
+      const loginBtn        = document.getElementById('loginBtn');
+      const loginStatus     = document.getElementById('loginStatus');
+      const forgotLink      = document.getElementById('forgotLink');
+
+      const showQrLink    = document.getElementById('showQrLink');
+      const showPhoneLink = document.getElementById('showPhoneLink');
+
+      const resetInput  = document.getElementById('resetInput');
+      const resetBtn    = document.getElementById('resetBtn');
+      const resetStatus = document.getElementById('resetStatus');
+      const backToLogin = document.getElementById('backToLogin');
+
+      const languageBtn      = document.getElementById('languageBtn');
+      const languageDropdown = document.getElementById('languageDropdown');
+
+      const EYE_OPEN = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>';
+      const EYE_OFF  = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>';
+
+      /* ── Screen switch ────────────────────────── */
+      function showScreen(screen) {
+        loginScreen.classList.remove('active');
+        qrScreen.classList.remove('active');
+        forgotScreen.classList.remove('active');
+        screen.classList.add('active');
+      }
+
+      /* ── Eye toggle ───────────────────────────── */
+      eyeBtn.addEventListener('click', () => {
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        eyeBtn.innerHTML = isPassword ? EYE_OFF : EYE_OPEN;
+        eyeBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        passwordInput.focus();
+      });
+
+      /* ── Helpers ──────────────────────────────── */
+      function markError(input) {
+        input.classList.add('error');
+        input.focus();
+        setTimeout(() => input.classList.remove('error'), 1500);
+      }
+      function clearStatus(el) {
+        el.textContent = '';
+        el.className = 'status';
+      }
+
+      /* ── Login ────────────────────────────────── */
+      function doLogin() {
+        const identifier = identifierInput.value.trim();
+        const password   = passwordInput.value;
+        clearStatus(loginStatus);
+
+        if (!identifier) return markError(identifierInput);
+        if (password.length < 6) {
+          loginStatus.textContent = 'Password must be at least 6 characters.';
+          loginStatus.className = 'status error';
+          return markError(passwordInput);
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Logging in...';
+        setTimeout(() => {
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Log In';
+          loginStatus.textContent = 'Welcome back, ' + identifier + '!';
+          loginStatus.className = 'status success';
+        }, 1200);
+      }
+
+      loginBtn.addEventListener('click', doLogin);
+      passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+      identifierInput.addEventListener('keydown', e => { if (e.key === 'Enter') passwordInput.focus(); });
+
+      /* ── Switch to QR ─────────────────────────── */
+      showQrLink.addEventListener('click', e => {
+        e.preventDefault();
+        clearStatus(loginStatus);
+        showScreen(qrScreen);
+      });
+
+      showPhoneLink.addEventListener('click', e => {
+        e.preventDefault();
+        showScreen(loginScreen);
+        identifierInput.focus();
+      });
+
+      /* ── Forgot password ──────────────────────── */
+      forgotLink.addEventListener('click', e => {
+        e.preventDefault();
+        resetInput.value = '';
+        clearStatus(resetStatus);
+        showScreen(forgotScreen);
+        resetInput.focus();
+      });
+
+      backToLogin.addEventListener('click', e => {
+        e.preventDefault();
+        clearStatus(loginStatus);
+        showScreen(loginScreen);
+        identifierInput.focus();
+      });
+
+      resetBtn.addEventListener('click', () => {
+        const val = resetInput.value.trim();
+        clearStatus(resetStatus);
+        if (!val) return markError(resetInput);
+
+        resetBtn.disabled = true;
+        resetBtn.textContent = 'Sending...';
+        setTimeout(() => {
+          resetBtn.disabled = false;
+          resetBtn.textContent = 'Send Reset Link';
+          resetStatus.textContent = 'Reset link sent to ' + val;
+          resetStatus.className = 'status success';
+        }, 1100);
+      });
+
+      resetInput.addEventListener('keydown', e => { if (e.key === 'Enter') resetBtn.click(); });
+
+      /* ── Language dropdown ────────────────────── */
+      languageBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        languageDropdown.classList.toggle('show');
+      });
+
+      document.addEventListener('click', e => {
+        if (!languageDropdown.contains(e.target) && e.target !== languageBtn) {
+          languageDropdown.classList.remove('show');
+        }
+      });
+
+      languageDropdown.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const label = this.textContent;
+          languageBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            ${label}
+          `;
+          languageDropdown.classList.remove('show');
+        });
+      });
+
+      identifierInput.focus();
+    })();
+  </script>
+
+</body>
+</html>

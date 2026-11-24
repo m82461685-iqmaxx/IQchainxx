@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Moj · Sign in</title>
+  <style>
+    /* ===== Moj Brand Tokens (derived from app screenshots) ===== */
+    :root {
+      --moj-bg: #0C0C0C;          /* main dark background  */
+      --moj-surface: #1A1A1A;     /* card surface          */
+      --moj-surface-light: #2E2E2E;
+      --moj-accent: #943444;      /* signature deep magenta */
+      --moj-accent-hover: #B84355;
+      --moj-yellow: #FFD400;      /* playful highlight     */
+      --moj-white: #FFFFFF;
+      --moj-grey-1: #B0B0B0;
+      --moj-grey-2: #6E6E6E;
+      --moj-grey-3: #3A3A3A;
+      --moj-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --moj-radius: 20px;
+      --moj-radius-sm: 14px;
+      --moj-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--moj-font);
+      background: var(--moj-bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== Main Card ===== */
+    .moj-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--moj-surface);
+      border-radius: var(--moj-radius);
+      box-shadow: var(--moj-shadow);
+      overflow: hidden;
+      border: 1px solid var(--moj-grey-3);
+      animation: slideUp 0.35s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Header / Logo Area ===== */
+    .moj-header {
+      padding: 32px 24px 24px;
+      text-align: center;
+      position: relative;
+      background: linear-gradient(180deg, rgba(148, 52, 68, 0.15) 0%, transparent 100%);
+    }
+
+    .moj-logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    /* Real Moj logo SVG (Arcticons "Moj A1" icon) */
+    .moj-logo-icon {
+      width: 52px;
+      height: 52px;
+      color: var(--moj-white);
+    }
+
+    .moj-logo-text {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--moj-white);
+      letter-spacing: -1.5px;
+    }
+
+    .moj-tagline {
+      margin-top: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--moj-grey-1);
+      letter-spacing: 0.3px;
+    }
+
+    /* ===== Language Selector ===== */
+    .moj-language-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .moj-language {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--moj-surface-light);
+      border: 1px solid var(--moj-grey-3);
+      border-radius: 100px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--moj-grey-1);
+      cursor: pointer;
+    }
+
+    .moj-language select {
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--moj-grey-1);
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .moj-language select option {
+      background: var(--moj-surface);
+      color: var(--moj-white);
+    }
+
+    /* ===== Body ===== */
+    .moj-body {
+      padding: 8px 24px 24px;
+    }
+
+    .moj-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--moj-white);
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .moj-subtitle {
+      font-size: 14px;
+      color: var(--moj-grey-1);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    /* ===== Phone Input ===== */
+    .moj-phone-group {
+      display: flex;
+      border: 1.5px solid var(--moj-grey-3);
+      border-radius: var(--moj-radius-sm);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: var(--moj-surface-light);
+    }
+
+    .moj-phone-group:focus-within {
+      border-color: var(--moj-accent);
+      box-shadow: 0 0 0 3px rgba(148, 52, 68, 0.3);
+    }
+
+    .moj-country-code {
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      background: var(--moj-grey-3);
+      border-right: 1.5px solid var(--moj-grey-2);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--moj-white);
+      white-space: nowrap;
+    }
+
+    .moj-phone-input {
+      flex: 1;
+      border: none;
+      padding: 15px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--moj-white);
+      outline: none;
+      background: transparent;
+      min-width: 0;
+    }
+
+    .moj-phone-input::placeholder {
+      color: var(--moj-grey-2);
+    }
+
+    /* ===== Primary Button ===== */
+    .moj-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: var(--moj-radius-sm);
+      background: var(--moj-accent);
+      color: var(--moj-white);
+      font-size: 16px;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.3px;
+      margin-top: 18px;
+    }
+
+    .moj-btn:hover {
+      background: var(--moj-accent-hover);
+    }
+
+    .moj-btn:active {
+      transform: scale(0.98);
+    }
+
+    .moj-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ===== OTP Section ===== */
+    .moj-otp-section {
+      display: none;
+    }
+
+    .moj-otp-section.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .moj-phone-section.hidden {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .moj-otp-info {
+      font-size: 14px;
+      color: var(--moj-grey-1);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .moj-otp-info strong {
+      color: var(--moj-white);
+      font-weight: 700;
+    }
+
+    .moj-otp-inputs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .moj-otp-input {
+      width: 52px;
+      height: 56px;
+      border: 1.5px solid var(--moj-grey-3);
+      border-radius: var(--moj-radius-sm);
+      text-align: center;
+      font-size: 24px;
+      font-weight: 800;
+      font-family: inherit;
+      color: var(--moj-white);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      background: var(--moj-surface-light);
+      caret-color: var(--moj-white);
+    }
+
+    .moj-otp-input:focus {
+      border-color: var(--moj-accent);
+      box-shadow: 0 0 0 3px rgba(148, 52, 68, 0.3);
+    }
+
+    .moj-otp-input.filled {
+      border-color: var(--moj-accent);
+      background: rgba(148, 52, 68, 0.1);
+    }
+
+    .moj-resend {
+      text-align: center;
+      font-size: 13px;
+      color: var(--moj-grey-1);
+      margin-bottom: 18px;
+    }
+
+    .moj-resend button {
+      background: none;
+      border: none;
+      color: var(--moj-yellow);
+      font-weight: 800;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    .moj-resend button:disabled {
+      color: var(--moj-grey-2);
+      text-decoration: none;
+      cursor: default;
+    }
+
+    .moj-change-number {
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    .moj-change-number button {
+      background: none;
+      border: none;
+      color: var(--moj-grey-1);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+    }
+
+    /* ===== Error ===== */
+    .moj-error {
+      font-size: 12px;
+      color: #FF6B6B;
+      margin-top: 6px;
+      display: none;
+      font-weight: 600;
+    }
+
+    .moj-error.visible {
+      display: block;
+    }
+
+    /* ===== Footer ===== */
+    .moj-footer {
+      padding: 0 24px 24px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--moj-grey-2);
+      line-height: 1.6;
+    }
+
+    .moj-footer a {
+      color: var(--moj-grey-1);
+      text-decoration: underline;
+    }
+
+    .moj-footer a:hover {
+      color: var(--moj-white);
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 380px) {
+      .moj-otp-input {
+        width: 44px;
+        height: 48px;
+        font-size: 20px;
+      }
+      .moj-title {
+        font-size: 21px;
+      }
+      .moj-logo-text {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="moj-card">
+
+    <!-- ===== HEADER ===== -->
+    <header class="moj-header">
+      <a href="#" class="moj-logo-wrap" aria-label="Moj home">
+        <!-- Real Moj logo SVG (Arcticons "Moj A1") -->
+        <svg class="moj-logo-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M40.5 5.5h-33a2 2 0 0 0-2 2v33a2 2 0 0 0 2 2h33a2 2 0 0 0 2-2v-33a2 2 0 0 0-2-2"/>
+          <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="m32.32 12.642l2.75-1.497v11m-6.745 5.165H19.66m-2.16 6.631L24 14l6.5 20"/>
+        </svg>
+        <span class="moj-logo-text">Moj</span>
+      </a>
+      <p class="moj-tagline">Moj pe hi Moj hai!</p>
+
+      <div class="moj-language-wrap">
+        <div class="moj-language">
+          <select aria-label="Select language" id="language-select">
+            <option value="hi">हिन्दी</option>
+            <option value="ta">தமிழ்</option>
+            <option value="te">తెలుగు</option>
+            <option value="bn">বাংলা</option>
+            <option value="mr">मराठी</option>
+            <option value="gu">ગુજરાતી</option>
+            <option value="kn">ಕನ್ನಡ</option>
+            <option value="ml">മലയാളം</option>
+            <option value="pa">ਪੰਜਾਬੀ</option>
+            <option value="en" selected>English</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== BODY ===== -->
+    <div class="moj-body">
+
+      <!-- ---------- Phone Entry View ---------- -->
+      <div class="moj-phone-section" id="phone-section">
+        <h1 class="moj-title">Sign in</h1>
+        <p class="moj-subtitle">
+          Enter your mobile number to continue. We’ll send you a one‑time password (OTP).
+        </p>
+
+        <div class="moj-phone-group">
+          <div class="moj-country-code">+91</div>
+          <input
+            type="tel"
+            class="moj-phone-input"
+            id="phone-input"
+            placeholder="98765 43210"
+            maxlength="10"
+            inputmode="numeric"
+            autocomplete="tel-national"
+            aria-label="Mobile number"
+          >
+        </div>
+        <div class="moj-error" id="phone-error">Enter a valid 10‑digit mobile number</div>
+
+        <button class="moj-btn" id="get-otp-btn">
+          Get OTP
+        </button>
+      </div>
+
+      <!-- ---------- OTP Verification View ---------- -->
+      <div class="moj-otp-section" id="otp-section">
+        <h1 class="moj-title">Verify OTP</h1>
+        <p class="moj-otp-info">
+          We’ve sent a 4‑digit code to <strong id="otp-phone-display">+91 98765 43210</strong>.
+          <br>Enter it below to sign in.
+        </p>
+
+        <div class="moj-otp-inputs" id="otp-inputs">
+          <input type="text" class="moj-otp-input" maxlength="1" inputmode="numeric" aria-label="Digit 1">
+          <input type="text" class="moj-otp-input" maxlength="1" inputmode="numeric" aria-label="Digit 2">
+          <input type="text" class="moj-otp-input" maxlength="1" inputmode="numeric" aria-label="Digit 3">
+          <input type="text" class="moj-otp-input" maxlength="1" inputmode="numeric" aria-label="Digit 4">
+        </div>
+
+        <div class="moj-error" id="otp-error">Enter the 4‑digit code</div>
+
+        <div class="moj-resend">
+          Didn’t receive the code?
+          <button id="resend-btn" disabled>Resend OTP (30s)</button>
+        </div>
+
+        <button class="moj-btn" id="verify-btn">
+          Verify &amp; Sign in
+        </button>
+
+        <div class="moj-change-number">
+          <button id="change-number-btn">Change mobile number</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="moj-footer">
+      By signing in, you agree to Moj’s
+      <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+    </footer>
+
+  </div>
+
+  <!-- ===== JAVASCRIPT ===== -->
+  <script>
+    (function () {
+      'use strict';
+
+      const phoneSection   = document.getElementById('phone-section');
+      const otpSection     = document.getElementById('otp-section');
+      const phoneInput     = document.getElementById('phone-input');
+      const getOtpBtn      = document.getElementById('get-otp-btn');
+      const phoneError     = document.getElementById('phone-error');
+      const otpPhoneDisplay= document.getElementById('otp-phone-display');
+      const otpInputs      = document.querySelectorAll('.moj-otp-input');
+      const otpError       = document.getElementById('otp-error');
+      const verifyBtn      = document.getElementById('verify-btn');
+      const resendBtn      = document.getElementById('resend-btn');
+      const changeNumberBtn= document.getElementById('change-number-btn');
+
+      let currentPhone = '';
+      let resendTimer  = null;
+      let resendSeconds= 30;
+
+      /* ---------- Utilities ---------- */
+      function formatPhone(digits) {
+        return '+91 ' + digits.slice(0, 5) + ' ' + digits.slice(5);
+      }
+
+      function isValidPhone(phone) {
+        return /^\d{10}$/.test(phone);
+      }
+
+      /* ---------- Get OTP ---------- */
+      getOtpBtn.addEventListener('click', function () {
+        const raw = phoneInput.value.replace(/\s/g, '');
+
+        if (!isValidPhone(raw)) {
+          phoneError.classList.add('visible');
+          phoneInput.focus();
+          return;
+        }
+
+        phoneError.classList.remove('visible');
+        currentPhone = raw;
+
+        getOtpBtn.disabled = true;
+        getOtpBtn.textContent = 'Sending…';
+
+        setTimeout(function () {
+          getOtpBtn.disabled = false;
+          getOtpBtn.textContent = 'Get OTP';
+
+          phoneSection.classList.add('hidden');
+          otpSection.classList.add('active');
+          otpPhoneDisplay.textContent = formatPhone(currentPhone);
+
+          otpInputs.forEach(inp => {
+            inp.value = '';
+            inp.classList.remove('filled');
+          });
+          otpInputs[0].focus();
+
+          startResendTimer();
+        }, 800);
+      });
+
+      /* ---------- OTP auto‑advance ---------- */
+      otpInputs.forEach((input, index) => {
+        input.addEventListener('input', function () {
+          this.value = this.value.replace(/\D/g, '').slice(0, 1);
+
+          if (this.value) {
+            this.classList.add('filled');
+            if (index < otpInputs.length - 1) {
+              otpInputs[index + 1].focus();
+            }
+          } else {
+            this.classList.remove('filled');
+          }
+
+          otpError.classList.remove('visible');
+        });
+
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Backspace' && !this.value && index > 0) {
+            otpInputs[index - 1].focus();
+            otpInputs[index - 1].value = '';
+            otpInputs[index - 1].classList.remove('filled');
+            e.preventDefault();
+          }
+        });
+
+        input.addEventListener('paste', function (e) {
+          e.preventDefault();
+          const pasted = (e.clipboardData || window.clipboardData)
+            .getData('text')
+            .replace(/\D/g, '')
+            .slice(0, 4);
+
+          if (pasted.length === 4) {
+            otpInputs.forEach((inp, i) => {
+              inp.value = pasted[i] || '';
+              if (inp.value) inp.classList.add('filled');
+            });
+            otpInputs[3].focus();
+          }
+        });
+      });
+
+      /* ---------- Verify OTP ---------- */
+      verifyBtn.addEventListener('click', function () {
+        const otp = Array.from(otpInputs).map(inp => inp.value).join('');
+
+        if (otp.length !== 4) {
+          otpError.classList.add('visible');
+          otpInputs[0].focus();
+          return;
+        }
+
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verifying…';
+
+        setTimeout(function () {
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = 'Verify & Sign in';
+
+          alert('Welcome to Moj!\nSigned in with ' + formatPhone(currentPhone));
+          resetToPhoneView();
+        }, 1000);
+      });
+
+      /* ---------- Resend timer ---------- */
+      function startResendTimer() {
+        resendSeconds = 30;
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Resend OTP (' + resendSeconds + 's)';
+
+        if (resendTimer) clearInterval(resendTimer);
+
+        resendTimer = setInterval(function () {
+          resendSeconds--;
+          if (resendSeconds <= 0) {
+            clearInterval(resendTimer);
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend OTP';
+          } else {
+            resendBtn.textContent = 'Resend OTP (' + resendSeconds + 's)';
+          }
+        }, 1000);
+      }
+
+      resendBtn.addEventListener('click', function () {
+        if (resendBtn.disabled) return;
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Sending…';
+
+        setTimeout(function () {
+          startResendTimer();
+        }, 600);
+      });
+
+      /* ---------- Change number ---------- */
+      changeNumberBtn.addEventListener('click', function () {
+        resetToPhoneView();
+      });
+
+      function resetToPhoneView() {
+        otpSection.classList.remove('active');
+        phoneSection.classList.remove('hidden');
+        otpInputs.forEach(inp => {
+          inp.value = '';
+          inp.classList.remove('filled');
+        });
+        otpError.classList.remove('visible');
+        phoneInput.value = '';
+        phoneInput.focus();
+        if (resendTimer) clearInterval(resendTimer);
+      }
+
+    })();
+  </script>
+
+</body>
+</html>

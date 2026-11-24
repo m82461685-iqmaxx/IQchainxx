@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Reddit - Log in</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #1A1A1B;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 400px;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Reddit Snoo Logo ─────────────────────────── */
+    .logo {
+      width: 88px;
+      height: 88px;
+      margin-bottom: 22px;
+    }
+    .logo svg { width: 100%; height: 100%; display: block; }
+
+    /* ── Headings ────────────────────────────────── */
+    .heading {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 6px;
+      line-height: 1.3;
+      color: #1A1A1B;
+    }
+    .subheading {
+      font-size: 14px;
+      color: #7C7C7C;
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+
+    /* ── Screens ─────────────────────────────────── */
+    .screen {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+    .screen.active { display: flex; }
+
+    /* ── Social buttons ──────────────────────────── */
+    .social-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #fff;
+      border: 1px solid #EDEFF1;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #1A1A1B;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .social-btn:hover { background: #F6F7F8; border-color: #D7DADC; }
+    .social-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    /* ── Divider ─────────────────────────────────── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin: 14px 0;
+      color: #7C7C7C;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #EDEFF1;
+    }
+
+    /* ── Inputs ──────────────────────────────────── */
+    .input-group { width: 100%; margin-bottom: 14px; position: relative; }
+
+    .text-input {
+      width: 100%;
+      padding: 15px 18px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 1px solid #EDEFF1;
+      border-radius: 20px;
+      background: #F6F7F8;
+      color: #1A1A1B;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .text-input::placeholder { color: #7C7C7C; }
+    .text-input:focus {
+      outline: none;
+      border-color: #FF4500;
+      background: #fff;
+    }
+    .text-input.error {
+      border-color: #FF4842;
+      background: #fff;
+    }
+
+    .password-wrap { position: relative; }
+    .password-wrap .text-input { padding-right: 50px; }
+
+    .eye-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+    .eye-btn:hover { background: rgba(0,0,0,.05); }
+    .eye-btn svg { width: 20px; height: 20px; fill: #7C7C7C; }
+
+    /* ── Forgot row ──────────────────────────────── */
+    .forgot-row {
+      width: 100%;
+      margin-top: -4px;
+      margin-bottom: 8px;
+      text-align: right;
+    }
+    .forgot-row .text-link {
+      font-size: 13px;
+      color: #7C7C7C;
+      font-weight: 500;
+    }
+    .forgot-row .text-link:hover { color: #FF4500; text-decoration: none; }
+
+    /* ── Primary button ──────────────────────────── */
+    .primary-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 4px;
+      background: #FF4500;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.05s;
+    }
+    .primary-btn:hover { background: #E03D00; }
+    .primary-btn:active { transform: scale(0.99); }
+    .primary-btn:disabled { opacity: 0.55; cursor: default; }
+    .primary-btn:disabled:hover { background: #FF4500; }
+
+    /* ── Links ───────────────────────────────────── */
+    .text-link {
+      display: inline-block;
+      font-size: 14px;
+      color: #FF4500;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .text-link:hover { text-decoration: underline; }
+
+    .signup-row {
+      margin-top: 22px;
+      font-size: 14px;
+      color: #7C7C7C;
+      text-align: center;
+    }
+    .signup-row .text-link {
+      color: #1A1A1B;
+      text-decoration: underline;
+      font-weight: 700;
+    }
+
+    /* ── Status ──────────────────────────────────── */
+    .status {
+      width: 100%;
+      min-height: 20px;
+      margin: 2px 0 10px;
+      font-size: 13px;
+      text-align: center;
+      color: #7C7C7C;
+    }
+    .status.success { color: #00A857; font-weight: 600; }
+    .status.error   { color: #FF4842; font-weight: 500; }
+
+    /* ── Terms footer ────────────────────────────── */
+    .terms {
+      margin-top: 28px;
+      font-size: 11px;
+      color: #7C7C7C;
+      text-align: center;
+      line-height: 1.55;
+      max-width: 340px;
+    }
+    .terms a {
+      color: #1A1A1B;
+      text-decoration: underline;
+      font-weight: 500;
+    }
+    .terms a:hover { color: #FF4500; }
+
+    /* ── Back link ───────────────────────────────── */
+    .back-row {
+      width: 100%;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      .login-container { padding: 28px 18px; }
+      .logo { width: 76px; height: 76px; }
+      .heading { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+
+    <!-- Reddit Snoo logo -->
+    <div class="logo">
+      <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+        <!-- Orange circle background -->
+        <circle cx="128" cy="128" r="128" fill="#FF4500"/>
+
+        <!-- Left antenna -->
+        <path d="M104 92 Q 98 62 90 48" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <circle cx="88" cy="45" r="10" fill="#fff"/>
+
+        <!-- Right antenna -->
+        <path d="M152 92 Q 158 62 166 48" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <circle cx="168" cy="45" r="10" fill="#fff"/>
+
+        <!-- Head -->
+        <ellipse cx="128" cy="150" rx="72" ry="56" fill="#fff"/>
+
+        <!-- Eyes -->
+        <ellipse cx="100" cy="136" rx="12" ry="14" fill="#FF4500"/>
+        <ellipse cx="156" cy="136" rx="12" ry="14" fill="#FF4500"/>
+
+        <!-- Smile -->
+        <path d="M98 167 Q 128 190 158 167" stroke="#FF4500" stroke-width="8" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <!-- ═══ SCREEN 1 : LOGIN (default) ═══ -->
+    <div class="screen active" id="loginScreen">
+      <h1 class="heading">Log in</h1>
+      <p class="subheading">Welcome back to Reddit</p>
+
+      <button class="social-btn" id="googleBtn">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+          <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+          <path fill="#FBBC05" d="M11.69 28.18a13.6 13.6 0 0 1 0-8.36v-5.7H4.34a23 23 0 0 0 0 19.76l7.35-5.7z"/>
+          <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 13.75l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <button class="social-btn" id="appleBtn">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#000" d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z"/>
+        </svg>
+        Continue with Apple
+      </button>
+
+      <div class="divider">or</div>
+
+      <div class="input-group">
+        <input
+          type="text"
+          class="text-input"
+          id="identifierInput"
+          placeholder="Username or email"
+          autocomplete="username"
+          spellcheck="false"
+          autocapitalize="none"
+        />
+      </div>
+
+      <div class="input-group password-wrap">
+        <input
+          type="password"
+          class="text-input"
+          id="passwordInput"
+          placeholder="Password"
+          autocomplete="current-password"
+        />
+        <button class="eye-btn" id="eyeBtn" type="button" aria-label="Show password">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="forgot-row">
+        <a class="text-link" id="forgotLink">Forgot password?</a>
+      </div>
+
+      <p class="status" id="loginStatus"></p>
+
+      <button class="primary-btn" id="loginBtn">Log In</button>
+
+      <div class="signup-row">
+        New to Reddit? <a class="text-link" id="signupLink">Sign up</a>
+      </div>
+
+      <p class="terms">
+        By continuing, you agree to our <a href="#">User Agreement</a> and
+        acknowledge that you understand the <a href="#">Privacy Policy</a>.
+      </p>
+    </div>
+
+    <!-- ═══ SCREEN 2 : FORGOT PASSWORD ═══ -->
+    <div class="screen" id="forgotScreen">
+      <h1 class="heading">Reset your password</h1>
+      <p class="subheading">
+        Enter your username or email and we'll send you a reset link
+      </p>
+
+      <div class="input-group">
+        <input
+          type="text"
+          class="text-input"
+          id="resetInput"
+          placeholder="Username or email"
+          spellcheck="false"
+          autocapitalize="none"
+        />
+      </div>
+
+      <p class="status" id="resetStatus"></p>
+
+      <button class="primary-btn" id="resetBtn">Send Reset Link</button>
+
+      <div class="back-row">
+        <a class="text-link" id="backToLogin" style="color:#7C7C7C">Back to log in</a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function() {
+      const loginScreen  = document.getElementById('loginScreen');
+      const forgotScreen = document.getElementById('forgotScreen');
+
+      const identifierInput = document.getElementById('identifierInput');
+      const passwordInput   = document.getElementById('passwordInput');
+      const eyeBtn          = document.getElementById('eyeBtn');
+      const loginBtn        = document.getElementById('loginBtn');
+      const loginStatus     = document.getElementById('loginStatus');
+      const forgotLink      = document.getElementById('forgotLink');
+
+      const resetInput  = document.getElementById('resetInput');
+      const resetBtn    = document.getElementById('resetBtn');
+      const resetStatus = document.getElementById('resetStatus');
+      const backToLogin = document.getElementById('backToLogin');
+
+      const googleBtn  = document.getElementById('googleBtn');
+      const appleBtn   = document.getElementById('appleBtn');
+      const signupLink = document.getElementById('signupLink');
+
+      const EYE_OPEN = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>';
+      const EYE_OFF  = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>';
+
+      function showScreen(screen) {
+        loginScreen.classList.remove('active');
+        forgotScreen.classList.remove('active');
+        screen.classList.add('active');
+      }
+
+      function markError(input) {
+        input.classList.add('error');
+        input.focus();
+        setTimeout(() => input.classList.remove('error'), 1500);
+      }
+      function clearStatus(el) {
+        el.textContent = '';
+        el.className = 'status';
+      }
+
+      /* ── Password toggle ─────────────────────── */
+      eyeBtn.addEventListener('click', () => {
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        eyeBtn.innerHTML = isPassword ? EYE_OFF : EYE_OPEN;
+        eyeBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        passwordInput.focus();
+      });
+
+      /* ── Login ───────────────────────────────── */
+      function doLogin() {
+        const identifier = identifierInput.value.trim();
+        const password   = passwordInput.value;
+        clearStatus(loginStatus);
+
+        if (!identifier) return markError(identifierInput);
+        if (password.length < 6) {
+          loginStatus.textContent = 'Password must be at least 6 characters.';
+          loginStatus.className = 'status error';
+          return markError(passwordInput);
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Logging in...';
+
+        setTimeout(() => {
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Log In';
+          loginStatus.textContent = 'Welcome back, u/' + identifier + '!';
+          loginStatus.className = 'status success';
+        }, 1200);
+      }
+
+      loginBtn.addEventListener('click', doLogin);
+      passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+      identifierInput.addEventListener('keydown', e => { if (e.key === 'Enter') passwordInput.focus(); });
+
+      /* ── Forgot password ─────────────────────── */
+      forgotLink.addEventListener('click', e => {
+        e.preventDefault();
+        resetInput.value = '';
+        clearStatus(resetStatus);
+        showScreen(forgotScreen);
+        resetInput.focus();
+      });
+
+      backToLogin.addEventListener('click', e => {
+        e.preventDefault();
+        clearStatus(loginStatus);
+        showScreen(loginScreen);
+        identifierInput.focus();
+      });
+
+      resetBtn.addEventListener('click', () => {
+        const val = resetInput.value.trim();
+        clearStatus(resetStatus);
+        if (!val) return markError(resetInput);
+
+        resetBtn.disabled = true;
+        resetBtn.textContent = 'Sending...';
+        setTimeout(() => {
+          resetBtn.disabled = false;
+          resetBtn.textContent = 'Send Reset Link';
+          resetStatus.textContent = 'Reset link sent to ' + val;
+          resetStatus.className = 'status success';
+        }, 1100);
+      });
+
+      resetInput.addEventListener('keydown', e => { if (e.key === 'Enter') resetBtn.click(); });
+
+      /* ── Social / signup placeholders ────────── */
+      googleBtn.addEventListener('click', () => {
+        loginStatus.textContent = 'Redirecting to Google…';
+        loginStatus.className = 'status';
+      });
+      appleBtn.addEventListener('click', () => {
+        loginStatus.textContent = 'Redirecting to Apple…';
+        loginStatus.className = 'status';
+      });
+      signupLink.addEventListener('click', e => {
+        e.preventDefault();
+        loginStatus.textContent = 'Sign-up screen (demo).';
+        loginStatus.className = 'status';
+      });
+
+      identifierInput.focus();
+    })();
+  </script>
+
+</body>
+</html>

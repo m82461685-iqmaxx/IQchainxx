@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ShareChat · Sign in</title>
+  <style>
+    /* ===== ShareChat Brand Tokens (verified from sources) ===== */
+    :root {
+      /* ShareChat's background yellow is #FCBC34 (LaunchShots sample) */
+      --sc-yellow-bg: #FCBC34;
+      --sc-yellow-dark: #DDA52D;
+      /* Accent from the same palette */
+      --sc-orange: #FF6A00;
+      --sc-red: #E53935;
+      --sc-black: #111111;
+      --sc-grey-1: #F7F7F7;
+      --sc-grey-2: #E5E5E5;
+      --sc-grey-3: #9E9E9E;
+      --sc-grey-4: #5E5E5E;
+      --sc-white: #FFFFFF;
+      --sc-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --sc-radius: 20px;
+      --sc-radius-sm: 14px;
+      --sc-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--sc-font);
+      background: var(--sc-yellow-bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== Main Card ===== */
+    .sc-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--sc-white);
+      border-radius: var(--sc-radius);
+      box-shadow: var(--sc-shadow);
+      overflow: hidden;
+      animation: slideUp 0.35s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Header ===== */
+    .sc-header {
+      background: var(--sc-yellow-bg);
+      padding: 28px 24px 22px;
+      text-align: center;
+      position: relative;
+    }
+
+    .sc-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    /* Real ShareChat logo SVG (from Arcticons / proicons) */
+    .sc-logo svg {
+      width: 52px;
+      height: 52px;
+      display: block;
+    }
+
+    .sc-logo-text {
+      font-size: 30px;
+      font-weight: 900;
+      color: var(--sc-black);
+      letter-spacing: -1px;
+    }
+
+    .sc-tagline {
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.65);
+      letter-spacing: 0.2px;
+    }
+
+    /* ===== Language Selector (real ShareChat has this) ===== */
+    .sc-language-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 14px;
+    }
+
+    .sc-language {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.7);
+      border: 1.5px solid rgba(0,0,0,0.15);
+      border-radius: 100px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--sc-black);
+      cursor: pointer;
+    }
+
+    .sc-language select {
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--sc-black);
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ===== Body ===== */
+    .sc-body {
+      padding: 28px 24px 24px;
+    }
+
+    .sc-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--sc-black);
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .sc-subtitle {
+      font-size: 14px;
+      color: var(--sc-grey-4);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    /* ===== Phone Input ===== */
+    .sc-phone-group {
+      display: flex;
+      border: 1.5px solid var(--sc-grey-2);
+      border-radius: var(--sc-radius-sm);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: var(--sc-white);
+    }
+
+    .sc-phone-group:focus-within {
+      border-color: var(--sc-black);
+      box-shadow: 0 0 0 3px rgba(252, 188, 52, 0.5);
+    }
+
+    .sc-country-code {
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      background: var(--sc-grey-1);
+      border-right: 1.5px solid var(--sc-grey-2);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--sc-black);
+      white-space: nowrap;
+    }
+
+    .sc-phone-input {
+      flex: 1;
+      border: none;
+      padding: 15px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--sc-black);
+      outline: none;
+      background: transparent;
+      min-width: 0;
+    }
+
+    .sc-phone-input::placeholder {
+      color: var(--sc-grey-3);
+    }
+
+    /* ===== Primary Button ===== */
+    .sc-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: var(--sc-radius-sm);
+      background: var(--sc-black);
+      color: var(--sc-yellow-bg);
+      font-size: 16px;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.3px;
+    }
+
+    .sc-btn:hover {
+      background: #2a2a2a;
+    }
+
+    .sc-btn:active {
+      transform: scale(0.98);
+    }
+
+    .sc-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ===== OTP Section ===== */
+    .sc-otp-section {
+      display: none;
+    }
+
+    .sc-otp-section.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .sc-phone-section.hidden {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .sc-otp-info {
+      font-size: 14px;
+      color: var(--sc-grey-4);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .sc-otp-info strong {
+      color: var(--sc-black);
+      font-weight: 700;
+    }
+
+    .sc-otp-inputs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .sc-otp-input {
+      width: 52px;
+      height: 56px;
+      border: 1.5px solid var(--sc-grey-2);
+      border-radius: var(--sc-radius-sm);
+      text-align: center;
+      font-size: 24px;
+      font-weight: 800;
+      font-family: inherit;
+      color: var(--sc-black);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      background: var(--sc-white);
+      caret-color: var(--sc-black);
+    }
+
+    .sc-otp-input:focus {
+      border-color: var(--sc-black);
+      box-shadow: 0 0 0 3px rgba(252, 188, 52, 0.5);
+    }
+
+    .sc-otp-input.filled {
+      border-color: var(--sc-black);
+      background: #FFFBE6;
+    }
+
+    .sc-resend {
+      text-align: center;
+      font-size: 13px;
+      color: var(--sc-grey-4);
+      margin-bottom: 18px;
+    }
+
+    .sc-resend button {
+      background: none;
+      border: none;
+      color: var(--sc-black);
+      font-weight: 800;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    .sc-resend button:disabled {
+      color: var(--sc-grey-3);
+      text-decoration: none;
+      cursor: default;
+    }
+
+    .sc-change-number {
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    .sc-change-number button {
+      background: none;
+      border: none;
+      color: var(--sc-grey-4);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+    }
+
+    /* ===== Error ===== */
+    .sc-error {
+      font-size: 12px;
+      color: var(--sc-red);
+      margin-top: 6px;
+      display: none;
+      font-weight: 600;
+    }
+
+    .sc-error.visible {
+      display: block;
+    }
+
+    /* ===== Footer ===== */
+    .sc-footer {
+      padding: 0 24px 24px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--sc-grey-3);
+      line-height: 1.6;
+    }
+
+    .sc-footer a {
+      color: var(--sc-grey-4);
+      text-decoration: underline;
+    }
+
+    .sc-footer a:hover {
+      color: var(--sc-black);
+    }
+
+    /* ===== Regional Illustration (real ShareChat uses couple imagery) ===== */
+    .sc-illustration {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      font-size: 32px;
+      opacity: 0.9;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 380px) {
+      .sc-otp-input {
+        width: 44px;
+        height: 48px;
+        font-size: 20px;
+      }
+      .sc-title {
+        font-size: 21px;
+      }
+      .sc-logo-text {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sc-card">
+
+    <!-- ===== HEADER ===== -->
+    <header class="sc-header">
+      <a href="#" class="sc-logo" aria-label="ShareChat home">
+        <!-- Real ShareChat logo SVG path (Arcticons / proicons) -->
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill="none" stroke="#111111" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M23.8429,24.1811l7.2118-7.2108M29.5148,5.0697l-5.5788,5.5788M10.9373,11.2765l19.5514,19.5514-6.8268,6.8258M17.1211,6.0326c2.8269,1.59,7.9028,4.9099,13.9326,10.9367M5.6805,17.4373c1.587,2.8249,4.9129,7.9198,10.9667,13.9736,6.0098,6.0098,11.0737,9.3297,13.9106,10.9307M10.9383,11.2765c-3.3239,3.4699-7.5668,7.9278-7.4198,12.7236-.148,4.7949,4.0959,9.2527,7.4178,12.7226,4.2659,4.2659,8.2238,6.9788,11.6957,7.6058,5.3188,1.136,10.3047-3.6089,14.1076-7.2498,3.8279-3.8269,6.4058-7.4058,7.3478-10.6097l.001-.004c.279-.781.407-1.6.395-2.4499.0197-.8437-.1142-1.684-.395-2.4799l-.001-.004c-.942-3.2039-3.5199-6.7828-7.3478-10.6107-3.8019-3.6399-8.7877-8.3828-14.1046-7.2498-3.4739.627-7.4318,3.3399-11.6987,7.6058h.002Z"/>
+        </svg>
+        <span class="sc-logo-text">ShareChat</span>
+      </a>
+      <p class="sc-tagline">India’s own social media platform</p>
+
+      <div class="sc-language-wrap">
+        <div class="sc-language">
+          <select aria-label="Select language" id="language-select">
+            <option value="hi">हिन्दी</option>
+            <option value="ta">தமிழ்</option>
+            <option value="te">తెలుగు</option>
+            <option value="bn">বাংলা</option>
+            <option value="mr">मराठी</option>
+            <option value="gu">ગુજરાતી</option>
+            <option value="kn">ಕನ್ನಡ</option>
+            <option value="ml">മലയാളം</option>
+            <option value="pa">ਪੰਜਾਬੀ</option>
+            <option value="en" selected>English</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== BODY ===== -->
+    <div class="sc-body">
+
+      <!-- ---------- Phone Entry View ---------- -->
+      <div class="sc-phone-section" id="phone-section">
+        <h1 class="sc-title">Sign in</h1>
+        <p class="sc-subtitle">
+          Enter your mobile number to continue. We’ll send you a one‑time password (OTP).
+        </p>
+
+        <!-- Regional illustration (ShareChat shows couples in regional attire) -->
+        <div class="sc-illustration" aria-hidden="true">
+          <span>👩🏽‍🤝‍👨🏽</span>
+          <span>👨🏽‍🤝‍👩🏽</span>
+        </div>
+
+        <div class="sc-phone-group">
+          <div class="sc-country-code">+91</div>
+          <input
+            type="tel"
+            class="sc-phone-input"
+            id="phone-input"
+            placeholder="98765 43210"
+            maxlength="10"
+            inputmode="numeric"
+            autocomplete="tel-national"
+            aria-label="Mobile number"
+          >
+        </div>
+        <div class="sc-error" id="phone-error">Enter a valid 10‑digit mobile number</div>
+
+        <button class="sc-btn" id="get-otp-btn" style="margin-top: 18px;">
+          Get OTP
+        </button>
+      </div>
+
+      <!-- ---------- OTP Verification View ---------- -->
+      <div class="sc-otp-section" id="otp-section">
+        <h1 class="sc-title">Verify OTP</h1>
+        <p class="sc-otp-info">
+          We’ve sent a 4‑digit code to <strong id="otp-phone-display">+91 98765 43210</strong>.
+          <br>Enter it below to sign in.
+        </p>
+
+        <div class="sc-otp-inputs" id="otp-inputs">
+          <input type="text" class="sc-otp-input" maxlength="1" inputmode="numeric" aria-label="Digit 1">
+          <input type="text" class="sc-otp-input" maxlength="1" inputmode="numeric" aria-label="Digit 2">
+          <input type="text" class="sc-otp-input" maxlength="1" inputmode="numeric" aria-label="Digit 3">
+          <input type="text" class="sc-otp-input" maxlength="1" inputmode="numeric" aria-label="Digit 4">
+        </div>
+
+        <div class="sc-error" id="otp-error">Enter the 4‑digit code</div>
+
+        <div class="sc-resend">
+          Didn’t receive the code?
+          <button id="resend-btn" disabled>Resend OTP (30s)</button>
+        </div>
+
+        <button class="sc-btn" id="verify-btn">
+          Verify &amp; Sign in
+        </button>
+
+        <div class="sc-change-number">
+          <button id="change-number-btn">Change mobile number</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="sc-footer">
+      By signing in, you agree to ShareChat’s
+      <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+    </footer>
+
+  </div>
+
+  <!-- ===== JAVASCRIPT ===== -->
+  <script>
+    (function () {
+      'use strict';
+
+      const phoneSection   = document.getElementById('phone-section');
+      const otpSection     = document.getElementById('otp-section');
+      const phoneInput     = document.getElementById('phone-input');
+      const getOtpBtn      = document.getElementById('get-otp-btn');
+      const phoneError     = document.getElementById('phone-error');
+      const otpPhoneDisplay= document.getElementById('otp-phone-display');
+      const otpInputs      = document.querySelectorAll('.sc-otp-input');
+      const otpError       = document.getElementById('otp-error');
+      const verifyBtn      = document.getElementById('verify-btn');
+      const resendBtn      = document.getElementById('resend-btn');
+      const changeNumberBtn= document.getElementById('change-number-btn');
+
+      let currentPhone = '';
+      let resendTimer  = null;
+      let resendSeconds= 30;
+
+      /* ---------- Utilities ---------- */
+      function formatPhone(digits) {
+        return '+91 ' + digits.slice(0, 5) + ' ' + digits.slice(5);
+      }
+
+      function isValidPhone(phone) {
+        return /^\d{10}$/.test(phone);
+      }
+
+      /* ---------- Get OTP ---------- */
+      getOtpBtn.addEventListener('click', function () {
+        const raw = phoneInput.value.replace(/\s/g, '');
+
+        if (!isValidPhone(raw)) {
+          phoneError.classList.add('visible');
+          phoneInput.focus();
+          return;
+        }
+
+        phoneError.classList.remove('visible');
+        currentPhone = raw;
+
+        getOtpBtn.disabled = true;
+        getOtpBtn.textContent = 'Sending…';
+
+        setTimeout(function () {
+          getOtpBtn.disabled = false;
+          getOtpBtn.textContent = 'Get OTP';
+
+          phoneSection.classList.add('hidden');
+          otpSection.classList.add('active');
+          otpPhoneDisplay.textContent = formatPhone(currentPhone);
+
+          otpInputs.forEach(inp => {
+            inp.value = '';
+            inp.classList.remove('filled');
+          });
+          otpInputs[0].focus();
+
+          startResendTimer();
+        }, 800);
+      });
+
+      /* ---------- OTP auto‑advance ---------- */
+      otpInputs.forEach((input, index) => {
+        input.addEventListener('input', function () {
+          this.value = this.value.replace(/\D/g, '').slice(0, 1);
+
+          if (this.value) {
+            this.classList.add('filled');
+            if (index < otpInputs.length - 1) {
+              otpInputs[index + 1].focus();
+            }
+          } else {
+            this.classList.remove('filled');
+          }
+
+          otpError.classList.remove('visible');
+        });
+
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Backspace' && !this.value && index > 0) {
+            otpInputs[index - 1].focus();
+            otpInputs[index - 1].value = '';
+            otpInputs[index - 1].classList.remove('filled');
+            e.preventDefault();
+          }
+        });
+
+        input.addEventListener('paste', function (e) {
+          e.preventDefault();
+          const pasted = (e.clipboardData || window.clipboardData)
+            .getData('text')
+            .replace(/\D/g, '')
+            .slice(0, 4);
+
+          if (pasted.length === 4) {
+            otpInputs.forEach((inp, i) => {
+              inp.value = pasted[i] || '';
+              if (inp.value) inp.classList.add('filled');
+            });
+            otpInputs[3].focus();
+          }
+        });
+      });
+
+      /* ---------- Verify OTP ---------- */
+      verifyBtn.addEventListener('click', function () {
+        const otp = Array.from(otpInputs).map(inp => inp.value).join('');
+
+        if (otp.length !== 4) {
+          otpError.classList.add('visible');
+          otpInputs[0].focus();
+          return;
+        }
+
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verifying…';
+
+        setTimeout(function () {
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = 'Verify & Sign in';
+
+          alert('Welcome to ShareChat!\nSigned in with ' + formatPhone(currentPhone));
+          resetToPhoneView();
+        }, 1000);
+      });
+
+      /* ---------- Resend timer ---------- */
+      function startResendTimer() {
+        resendSeconds = 30;
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Resend OTP (' + resendSeconds + 's)';
+
+        if (resendTimer) clearInterval(resendTimer);
+
+        resendTimer = setInterval(function () {
+          resendSeconds--;
+          if (resendSeconds <= 0) {
+            clearInterval(resendTimer);
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend OTP';
+          } else {
+            resendBtn.textContent = 'Resend OTP (' + resendSeconds + 's)';
+          }
+        }, 1000);
+      }
+
+      resendBtn.addEventListener('click', function () {
+        if (resendBtn.disabled) return;
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Sending…';
+
+        setTimeout(function () {
+          startResendTimer();
+        }, 600);
+      });
+
+      /* ---------- Change number ---------- */
+      changeNumberBtn.addEventListener('click', function () {
+        resetToPhoneView();
+      });
+
+      function resetToPhoneView() {
+        otpSection.classList.remove('active');
+        phoneSection.classList.remove('hidden');
+        otpInputs.forEach(inp => {
+          inp.value = '';
+          inp.classList.remove('filled');
+        });
+        otpError.classList.remove('visible');
+        phoneInput.value = '';
+        phoneInput.focus();
+        if (resendTimer) clearInterval(resendTimer);
+      }
+
+    })();
+  </script>
+
+</body>
+</html>
