@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Snapchat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Snapchat Ghost Logo ─────────────────────────── */
+    .logo {
+      width: 84px;
+      height: 84px;
+      margin-bottom: 18px;
+    }
+    .logo svg { width: 100%; height: 100%; display: block; }
+
+    /* ── Headings ─────────────────────────────────────── */
+    .heading {
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
+      line-height: 1.25;
+      letter-spacing: -0.3px;
+    }
+    .subheading {
+      font-size: 15px;
+      color: #6e6e6e;
+      text-align: center;
+      margin-bottom: 32px;
+      line-height: 1.4;
+    }
+
+    /* ── Screens ──────────────────────────────────────── */
+    .screen {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+    .screen.active { display: flex; }
+
+    /* ── Inputs ───────────────────────────────────────── */
+    .input-group { width: 100%; margin-bottom: 14px; position: relative; }
+
+    .text-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 15px;
+      font-family: inherit;
+      border: 1.5px solid #e5e5e5;
+      border-radius: 10px;
+      background: #fafafa;
+      color: #000;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .text-input::placeholder { color: #999; }
+    .text-input:focus {
+      outline: none;
+      border-color: #000;
+      background: #fff;
+    }
+    .text-input.error { border-color: #ff3b30; background: #fff; }
+
+    /* Password field with eye toggle */
+    .password-wrap { position: relative; }
+    .password-wrap .text-input { padding-right: 48px; }
+
+    .eye-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+    .eye-btn:hover { background: rgba(0,0,0,.05); }
+    .eye-btn svg { width: 20px; height: 20px; fill: #666; }
+
+    /* ── Buttons ──────────────────────────────────────── */
+    .primary-btn {
+      width: 100%;
+      padding: 15px;
+      margin-top: 6px;
+      background: #FFFC00;
+      color: #000;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.05s;
+      letter-spacing: 0.2px;
+    }
+    .primary-btn:hover { background: #f2ef00; }
+    .primary-btn:active { transform: scale(0.98); }
+    .primary-btn:disabled { opacity: 0.55; cursor: default; }
+    .primary-btn:disabled:hover { background: #FFFC00; }
+
+    .text-link {
+      display: inline-block;
+      font-size: 14px;
+      color: #000;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .text-link:hover { text-decoration: underline; }
+
+    .forgot-row {
+      width: 100%;
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    /* ── Divider ──────────────────────────────────────── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin: 26px 0 18px;
+      color: #999;
+      font-size: 13px;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e5e5;
+    }
+
+    /* ── Social buttons ───────────────────────────────── */
+    .social-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 13px;
+      margin-bottom: 10px;
+      background: #fff;
+      border: 1.5px solid #e5e5e5;
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #000;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .social-btn:hover { background: #f7f7f7; border-color: #d5d5d5; }
+    .social-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    /* ── Signup footer ────────────────────────────────── */
+    .signup-row {
+      margin-top: 26px;
+      font-size: 14px;
+      color: #6e6e6e;
+      text-align: center;
+    }
+    .signup-row .text-link {
+      color: #000;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    /* ── Status message ───────────────────────────────── */
+    .status {
+      width: 100%;
+      min-height: 20px;
+      margin: 2px 0 10px;
+      font-size: 14px;
+      text-align: center;
+      color: #6e6e6e;
+    }
+    .status.success { color: #00a05a; font-weight: 600; }
+    .status.error   { color: #ff3b30; font-weight: 500; }
+
+    /* ── Back link ────────────────────────────────────── */
+    .back-row {
+      width: 100%;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      .login-container { padding: 28px 18px; }
+      .heading { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+
+    <!-- Snapchat ghost logo (yellow) -->
+    <div class="logo">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#FFFC00" d="M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.3 4.683a2.6 2.6 0 0 0-.017.14c.06.06.256.052.442.03.174-.02.376-.033.576.006.362.07.69.28.87.564.174.275.148.545.008.812-.14.267-.44.435-.75.53-.352.105-.704.126-.99.208-.288.082-.44.29-.472.523-.033.234.024.49.14.734.115.245.548 1.05 1.55 1.475 1.005.426 1.32.545 1.585.585.267.04.427.132.504.28.077.15.043.34-.055.522-.098.183-.31.346-.665.478-.355.132-.512.256-.593.44-.083.183-.043.427.11.775.152.348.427.734.66 1.045.233.31.427.545.55.72.124.176.135.314.043.5-.09.187-.31.32-.585.427-1.05.395-1.85.15-2.4.29-.4.1-.68.35-.99.55-.4.26-.85.39-1.5.39s-1.1-.13-1.5-.39c-.31-.2-.59-.45-.99-.55-.55-.14-1.35.105-2.4-.29-.275-.107-.495-.24-.585-.427-.088-.186-.08-.324.043-.5.123-.175.317-.41.55-.72.233-.31.508-.697.66-1.045.153-.348.193-.592.11-.775-.08-.184-.238-.308-.593-.44-.355-.132-.567-.295-.665-.478-.098-.183-.132-.372-.055-.522.077-.148.237-.24.504-.28.266-.04.58-.16 1.585-.585 1.002-.425 1.435-1.23 1.55-1.475.116-.244.173-.5.14-.734-.032-.233-.184-.44-.472-.523-.286-.082-.638-.103-.99-.208-.31-.095-.61-.263-.75-.53-.14-.267-.166-.537.008-.812.18-.284.508-.494.87-.564.2-.039.402-.026.576-.006.186.022.382.03.442-.03a2.6 2.6 0 0 0-.017-.14c-.103-1.464-.229-3.49.3-4.683C7.86 1.07 11.216.793 12.206.793z"/>
+      </svg>
+    </div>
+
+    <!-- ═══ SCREEN 1 : LOGIN (default) ═══ -->
+    <div class="screen active" id="loginScreen">
+      <h1 class="heading">Log in to Snapchat</h1>
+      <p class="subheading">Use your username and password to continue</p>
+
+      <div class="input-group">
+        <input
+          type="text"
+          class="text-input"
+          id="usernameInput"
+          placeholder="Username or email"
+          autocomplete="username"
+          spellcheck="false"
+          autocapitalize="none"
+        />
+      </div>
+
+      <div class="input-group password-wrap">
+        <input
+          type="password"
+          class="text-input"
+          id="passwordInput"
+          placeholder="Password"
+          autocomplete="current-password"
+        />
+        <button class="eye-btn" id="eyeBtn" type="button" aria-label="Show password">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
+          </svg>
+        </button>
+      </div>
+
+      <p class="status" id="loginStatus"></p>
+
+      <button class="primary-btn" id="loginBtn">Log In</button>
+
+      <div class="forgot-row">
+        <a class="text-link" id="forgotLink">Forgot your password?</a>
+      </div>
+
+      <div class="divider">or</div>
+
+      <button class="social-btn" id="googleBtn">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+          <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+          <path fill="#FBBC05" d="M11.69 28.18a13.6 13.6 0 0 1 0-8.36v-5.7H4.34a23 23 0 0 0 0 19.76l7.35-5.7z"/>
+          <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 13.75l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <button class="social-btn" id="appleBtn">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#000" d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z"/>
+        </svg>
+        Continue with Apple
+      </button>
+
+      <div class="signup-row">
+        New to Snapchat? <a class="text-link" id="signupLink">Sign up</a>
+      </div>
+    </div>
+
+    <!-- ═══ SCREEN 2 : FORGOT PASSWORD ═══ -->
+    <div class="screen" id="forgotScreen">
+      <h1 class="heading">Forgot your password?</h1>
+      <p class="subheading">
+        Enter your username, email, or phone number and we'll send you a reset link
+      </p>
+
+      <div class="input-group">
+        <input
+          type="text"
+          class="text-input"
+          id="resetInput"
+          placeholder="Username, email, or phone number"
+          spellcheck="false"
+          autocapitalize="none"
+        />
+      </div>
+
+      <p class="status" id="resetStatus"></p>
+
+      <button class="primary-btn" id="resetBtn">Send Reset Link</button>
+
+      <div class="back-row">
+        <a class="text-link" id="backToLogin">Back to log in</a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function() {
+      const loginScreen   = document.getElementById('loginScreen');
+      const forgotScreen  = document.getElementById('forgotScreen');
+      const usernameInput = document.getElementById('usernameInput');
+      const passwordInput = document.getElementById('passwordInput');
+      const eyeBtn        = document.getElementById('eyeBtn');
+      const loginBtn      = document.getElementById('loginBtn');
+      const loginStatus   = document.getElementById('loginStatus');
+      const forgotLink    = document.getElementById('forgotLink');
+      const backToLogin   = document.getElementById('backToLogin');
+      const resetInput    = document.getElementById('resetInput');
+      const resetBtn      = document.getElementById('resetBtn');
+      const resetStatus   = document.getElementById('resetStatus');
+      const googleBtn     = document.getElementById('googleBtn');
+      const appleBtn      = document.getElementById('appleBtn');
+      const signupLink    = document.getElementById('signupLink');
+
+      const EYE_OPEN = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>';
+      const EYE_OFF  = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>';
+
+      /* ── Screen switch ───────────────────────────── */
+      function showScreen(screen) {
+        loginScreen.classList.remove('active');
+        forgotScreen.classList.remove('active');
+        screen.classList.add('active');
+      }
+
+      /* ── Password visibility toggle ──────────────── */
+      eyeBtn.addEventListener('click', () => {
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        eyeBtn.innerHTML = isPassword ? EYE_OFF : EYE_OPEN;
+        eyeBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        passwordInput.focus();
+      });
+
+      /* ── Validation helper ───────────────────────── */
+      function markError(input) {
+        input.classList.add('error');
+        input.focus();
+        setTimeout(() => input.classList.remove('error'), 1500);
+      }
+
+      /* ── Login ───────────────────────────────────── */
+      function doLogin() {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+
+        loginStatus.textContent = '';
+        loginStatus.className = 'status';
+
+        if (!username) return markError(usernameInput);
+        if (password.length < 6) {
+          loginStatus.textContent = 'Password must be at least 6 characters.';
+          loginStatus.className = 'status error';
+          return markError(passwordInput);
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Logging in...';
+
+        setTimeout(() => {
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Log In';
+
+          // Demo: any valid input is accepted
+          loginStatus.textContent = 'Welcome back, ' + username + '!';
+          loginStatus.className = 'status success';
+        }, 1200);
+      }
+
+      loginBtn.addEventListener('click', doLogin);
+      passwordInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') doLogin();
+      });
+      usernameInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') passwordInput.focus();
+      });
+
+      /* ── Forgot password flow ────────────────────── */
+      forgotLink.addEventListener('click', e => {
+        e.preventDefault();
+        resetInput.value = '';
+        resetStatus.textContent = '';
+        resetStatus.className = 'status';
+        showScreen(forgotScreen);
+        resetInput.focus();
+      });
+
+      backToLogin.addEventListener('click', e => {
+        e.preventDefault();
+        loginStatus.textContent = '';
+        loginStatus.className = 'status';
+        showScreen(loginScreen);
+        usernameInput.focus();
+      });
+
+      resetBtn.addEventListener('click', () => {
+        const val = resetInput.value.trim();
+        resetStatus.textContent = '';
+        resetStatus.className = 'status';
+
+        if (!val) return markError(resetInput);
+
+        resetBtn.disabled = true;
+        resetBtn.textContent = 'Sending...';
+
+        setTimeout(() => {
+          resetBtn.disabled = false;
+          resetBtn.textContent = 'Send Reset Link';
+          resetStatus.textContent = 'Reset link sent to ' + val;
+          resetStatus.className = 'status success';
+        }, 1100);
+      });
+
+      resetInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') resetBtn.click();
+      });
+
+      /* ── Social / signup placeholders ────────────── */
+      googleBtn.addEventListener('click', () => {
+        loginStatus.textContent = 'Redirecting to Google…';
+        loginStatus.className = 'status';
+      });
+      appleBtn.addEventListener('click', () => {
+        loginStatus.textContent = 'Redirecting to Apple…';
+        loginStatus.className = 'status';
+      });
+      signupLink.addEventListener('click', e => {
+        e.preventDefault();
+        loginStatus.textContent = 'Sign-up screen (demo).';
+        loginStatus.className = 'status';
+      });
+
+      /* ── Auto focus on load ──────────────────────── */
+      usernameInput.focus();
+    })();
+  </script>
+
+</body>
+</html>
