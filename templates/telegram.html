@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Telegram Web</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 20px;
+      color: #0088cc;
+    }
+
+    .logo svg { width: 100%; height: 100%; fill: currentColor; }
+
+    .heading {
+      font-size: 22px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .subheading {
+      font-size: 15px;
+      color: #999;
+      text-align: center;
+      margin-bottom: 32px;
+      line-height: 1.4;
+    }
+
+    /* Phone section default active */
+    .phone-section {
+      display: flex;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .phone-section.hidden { display: none; }
+
+    /* QR section hidden by default */
+    .qr-section {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .qr-section.active { display: flex; }
+
+    .input-group { width: 100%; margin-bottom: 16px; }
+
+    .input-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #999;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .country-select,
+    .phone-input {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-family: inherit;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      background: #fff;
+      color: #000;
+    }
+
+    .country-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      cursor: pointer;
+    }
+
+    .country-select:focus,
+    .phone-input:focus {
+      outline: none;
+      border-color: #0088cc;
+    }
+
+    .phone-input::placeholder { color: #999; }
+
+    /* Passkey option - directly below phone number */
+    .passkey-row {
+      width: 100%;
+      margin: -4px 0 16px;
+    }
+
+    .passkey-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 11px 12px;
+      background: #f7f7f7;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: 500;
+      color: #0088cc;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .passkey-btn:hover { background: #eef7fc; }
+
+    .passkey-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: #0088cc;
+      flex-shrink: 0;
+    }
+
+    .passkey-status {
+      width: 100%;
+      min-height: 18px;
+      margin: -8px 0 12px;
+      font-size: 13px;
+      color: #999;
+      text-align: center;
+    }
+
+    .next-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 8px;
+      background: #0088cc;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .next-btn:hover { background: #0077b3; }
+    .next-btn:active { background: #006699; }
+    .next-btn:disabled { opacity: 0.7; cursor: default; }
+
+    .toggle-link {
+      display: inline-block;
+      margin-top: 24px;
+      font-size: 15px;
+      color: #0088cc;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .toggle-link:hover { text-decoration: underline; }
+
+    /* QR */
+    .qr-box {
+      width: 180px;
+      height: 180px;
+      background: #f7f7f7;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .qr-pattern {
+      width: 140px;
+      height: 140px;
+      background:
+        repeating-linear-gradient(0deg, #000 0px, #000 4px, transparent 4px, transparent 8px),
+        repeating-linear-gradient(90deg, #000 0px, #000 4px, transparent 4px, transparent 8px);
+      background-size: 8px 8px;
+      background-blend-mode: multiply;
+      opacity: 0.85;
+    }
+
+    .qr-instructions {
+      list-style: none;
+      counter-reset: step;
+      width: 100%;
+      margin-bottom: 28px;
+    }
+
+    .qr-instructions li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 15px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .qr-instructions li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      background: #0088cc;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 1px;
+    }
+
+    /* Language */
+    .language-selector {
+      margin-top: 48px;
+      position: relative;
+    }
+
+    .language-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #999;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    .language-btn:hover { background: #f7f7f7; }
+
+    .language-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: #999;
+    }
+
+    .language-dropdown {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 6px 0;
+      min-width: 160px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.1);
+      margin-bottom: 6px;
+    }
+
+    .language-dropdown.show { display: block; }
+
+    .language-dropdown button {
+      display: block;
+      width: 100%;
+      padding: 8px 16px;
+      background: none;
+      border: none;
+      text-align: left;
+      font-size: 14px;
+      font-family: inherit;
+      color: #000;
+      cursor: pointer;
+    }
+
+    .language-dropdown button:hover { background: #f7f7f7; }
+
+    @media (max-width: 480px) {
+      .login-container { padding: 24px 16px; }
+      .qr-box { width: 150px; height: 150px; }
+      .qr-pattern { width: 115px; height: 115px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+
+    <div class="logo">
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+        <path d="M120 0C53.7 0 0 53.7 0 120s53.7 120 120 120 120-53.7 120-120S186.3 0 120 0zm55.5 81.2l-18.6 88.1c-1.4 6.2-5.1 7.7-10.3 4.8l-28.6-21.1-13.8 13.3c-1.5 1.5-2.8 2.8-5.7 2.8l2-29.1 52.9-47.8c2.3-2 0.5-3.1-2.9-1.1L76.9 124l-28.2-8.8c-6.1-1.9-6.2-6.1 1.3-9.1l110.3-42.5c5.1-1.9 9.5 1.2 7.2 9.6z"/>
+      </svg>
+    </div>
+
+    <!-- Phone login: default screen -->
+    <div class="phone-section" id="phoneSection">
+      <h1 class="heading">Log in by phone number</h1>
+      <p class="subheading">Enter your phone number or use a passkey</p>
+
+      <div class="input-group">
+        <label class="input-label" for="countrySelect">Country</label>
+        <select class="country-select" id="countrySelect">
+          <option value="+1">United States (+1)</option>
+          <option value="+44">United Kingdom (+44)</option>
+          <option value="+49">Germany (+49)</option>
+          <option value="+33">France (+33)</option>
+          <option value="+39">Italy (+39)</option>
+          <option value="+34">Spain (+34)</option>
+          <option value="+7">Russia (+7)</option>
+          <option value="+91" selected>India (+91)</option>
+          <option value="+86">China (+86)</option>
+          <option value="+81">Japan (+81)</option>
+          <option value="+82">South Korea (+82)</option>
+          <option value="+55">Brazil (+55)</option>
+          <option value="+52">Mexico (+52)</option>
+          <option value="+61">Australia (+61)</option>
+          <option value="+27">South Africa (+27)</option>
+          <option value="+20">Egypt (+20)</option>
+          <option value="+234">Nigeria (+234)</option>
+          <option value="+254">Kenya (+254)</option>
+          <option value="+971">UAE (+971)</option>
+          <option value="+966">Saudi Arabia (+966)</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label" for="phoneInput">Phone number</label>
+        <input
+          type="tel"
+          class="phone-input"
+          id="phoneInput"
+          placeholder="Your phone number"
+          autocomplete="tel"
+        />
+      </div>
+
+      <!-- Passkey option directly below phone number -->
+      <div class="passkey-row">
+        <button class="passkey-btn" id="passkeyBtn" type="button">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12.65 10A5.99 5.99 0 0 0 7 6a6 6 0 0 0 0 12 5.99 5.99 0 0 0 5.65-4H14v4h4v-4h2v-4h-7.35zM7 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+            <path d="M7 9a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+          </svg>
+          <span>Log in with passkey</span>
+        </button>
+      </div>
+      <p class="passkey-status" id="passkeyStatus"></p>
+
+      <button class="next-btn" id="nextBtn">Next</button>
+
+      <a class="toggle-link" id="showQrLogin">Log in by QR code</a>
+    </div>
+
+    <!-- QR login: hidden initially -->
+    <div class="qr-section" id="qrSection">
+      <h1 class="heading">Log in to Telegram by QR Code</h1>
+      <p class="subheading">Open Telegram on your phone and scan the code below</p>
+
+      <div class="qr-box">
+        <div class="qr-pattern"></div>
+      </div>
+
+      <ol class="qr-instructions">
+        <li>Open Telegram on your phone</li>
+        <li>Go to <strong>Settings &gt; Devices &gt; Link Desktop Device</strong></li>
+        <li>Point your phone at this screen to confirm login</li>
+      </ol>
+
+      <a class="toggle-link" id="showPhoneLogin">Log in by phone number</a>
+    </div>
+
+    <!-- Language selector -->
+    <div class="language-selector">
+      <button class="language-btn" id="languageBtn">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+        English
+      </button>
+      <div class="language-dropdown" id="languageDropdown">
+        <button data-lang="en">English</button>
+        <button data-lang="es">Español</button>
+        <button data-lang="de">Deutsch</button>
+        <button data-lang="fr">Français</button>
+        <button data-lang="pt">Português</button>
+        <button data-lang="ru">Русский</button>
+        <button data-lang="ar">العربية</button>
+        <button data-lang="hi">हिन्दी</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function() {
+      const phoneSection = document.getElementById('phoneSection');
+      const qrSection = document.getElementById('qrSection');
+      const showPhoneLogin = document.getElementById('showPhoneLogin');
+      const showQrLogin = document.getElementById('showQrLogin');
+      const nextBtn = document.getElementById('nextBtn');
+      const phoneInput = document.getElementById('phoneInput');
+      const countrySelect = document.getElementById('countrySelect');
+      const passkeyBtn = document.getElementById('passkeyBtn');
+      const passkeyStatus = document.getElementById('passkeyStatus');
+      const languageBtn = document.getElementById('languageBtn');
+      const languageDropdown = document.getElementById('languageDropdown');
+
+      // Toggle QR
+      showQrLogin.addEventListener('click', function(e) {
+        e.preventDefault();
+        phoneSection.classList.add('hidden');
+        qrSection.classList.add('active');
+      });
+
+      showPhoneLogin.addEventListener('click', function(e) {
+        e.preventDefault();
+        qrSection.classList.remove('active');
+        phoneSection.classList.remove('hidden');
+        phoneInput.focus();
+      });
+
+      // Digits only
+      phoneInput.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+      });
+
+      // Next
+      nextBtn.addEventListener('click', function() {
+        const code = countrySelect.value;
+        const number = phoneInput.value.trim();
+
+        if (!number) {
+          phoneInput.focus();
+          phoneInput.style.borderColor = '#ff3b30';
+          setTimeout(() => phoneInput.style.borderColor = '#e5e5e5', 1500);
+          return;
+        }
+
+        nextBtn.textContent = 'Sending...';
+        nextBtn.disabled = true;
+
+        setTimeout(() => {
+          nextBtn.textContent = 'Next';
+          nextBtn.disabled = false;
+          alert('Code sent to ' + code + ' ' + number);
+        }, 1200);
+      });
+
+      // Passkey login
+      passkeyBtn.addEventListener('click', async function() {
+        passkeyStatus.textContent = '';
+
+        if (!window.PublicKeyCredential || !navigator.credentials) {
+          passkeyStatus.textContent = 'This browser does not support passkeys.';
+          return;
+        }
+
+        try {
+          passkeyStatus.textContent = 'Opening passkey...';
+
+          const challenge = new Uint8Array(32);
+          crypto.getRandomValues(challenge);
+
+          const publicKey = {
+            challenge,
+            rpId: location.hostname || undefined,
+            userVerification: 'preferred',
+            timeout: 60000
+          };
+
+          await navigator.credentials.get({ publicKey });
+
+          passkeyStatus.textContent = 'Passkey verified (demo).';
+        } catch (err) {
+          passkeyStatus.textContent = 'Passkey cancelled or unavailable.';
+        }
+      });
+
+      // Language dropdown
+      languageBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        languageDropdown.classList.toggle('show');
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!languageDropdown.contains(e.target) && e.target !== languageBtn) {
+          languageDropdown.classList.remove('show');
+        }
+      });
+
+      languageDropdown.querySelectorAll('button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const label = this.textContent;
+          languageBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            ${label}
+          `;
+          languageDropdown.classList.remove('show');
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>
