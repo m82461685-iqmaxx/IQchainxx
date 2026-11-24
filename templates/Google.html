@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in - Google Accounts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ============================================================
+       MATERIAL 3 TOKENS  (sourced from Google Accounts DESIGN.md) 
+       ============================================================ */
+    :root {
+      --md-surface: #ffffff;
+      --md-surface-dim: #f8f9fa;
+      --md-surface-container: #f1f3f4;
+      --md-on-surface: #1f1f1f;
+      --md-on-surface-variant: #5f6368;
+      --md-outline: #dadce0;
+      --md-outline-variant: #c6c6c6;
+      --md-primary: #0b57d0;       /* Google Blue (M3) */
+      --md-primary-container: #d2e3fc;
+      --md-on-primary: #ffffff;
+      --md-error: #b3261e;
+      --md-error-container: #f9dedc;
+      --md-on-error-container: #8c1d1a;
+      --md-secondary: #1a73e8;     /* legacy Google Blue for links */
+      --md-radius-card: 8px;
+      --md-radius-input: 4px;
+      --md-radius-button: 20px;
+      --md-font: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont,
+                'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+
+    *,
+    *::before,
+    *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--md-font);
+      background: #f0f4f9;               /* Google outer canvas */
+      color: var(--md-on-surface);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 450px;                 /* standard Google auth card width */
+      background: var(--md-surface);
+      border-radius: var(--md-radius-card);
+      padding: 48px 40px 36px;
+      box-shadow: 0 1px 3px rgba(60,64,67,.08),
+                  0 4px 8px 3px rgba(60,64,67,.06);
+    }
+
+    /* ============================================================
+       GOOGLE LOGO  (four-colour SVG)
+       ============================================================ */
+    .google-logo {
+      display: block;
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 16px;
+    }
+
+    /* ============================================================
+       HEADINGS
+       ============================================================ */
+    .card h1 {
+      font-family: var(--md-font);
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 32px;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .card .subtitle {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 24px;
+      text-align: center;
+      color: var(--md-on-surface);
+      margin-bottom: 32px;
+    }
+
+    /* ============================================================
+       FORM CONTROLS  (floating label, M3 style)
+       ============================================================ */
+    .field {
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .field input {
+      width: 100%;
+      height: 56px;
+      padding: 20px 14px 6px;
+      font-family: var(--md-font);
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 24px;
+      color: var(--md-on-surface);
+      background: var(--md-surface);
+      border: 1px solid var(--md-outline);
+      border-radius: var(--md-radius-input);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .field input:hover { border-color: var(--md-on-surface-variant); }
+
+    .field input:focus {
+      border-color: var(--md-primary);
+      box-shadow: 0 0 0 1px var(--md-primary);
+    }
+
+    .field label {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: var(--md-on-surface-variant);
+      pointer-events: none;
+      transition: top .15s ease, transform .15s ease, font-size .15s ease;
+      background: var(--md-surface);
+      padding: 0 4px;
+    }
+
+    /* float when focused OR filled */
+    .field input:focus + label,
+    .field input:not(:placeholder-shown) + label {
+      top: 8px;
+      transform: none;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--md-primary);
+    }
+
+    /* error state */
+    .field.has-error input {
+      border-color: var(--md-error);
+      box-shadow: 0 0 0 1px var(--md-error);
+    }
+    .field.has-error label { color: var(--md-error); }
+    .field .error-msg {
+      display: none;
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--md-error);
+      margin-top: 4px;
+      padding-left: 14px;
+    }
+    .field.has-error .error-msg { display: block; }
+
+    /* ============================================================
+       LINK BUTTONS  (Forgot email / Forgot password / Learn more)
+       ============================================================ */
+    .text-link {
+      display: inline-block;
+      background: none;
+      border: none;
+      font-family: var(--md-font);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
+      color: var(--md-secondary);
+      cursor: pointer;
+      padding: 4px 0;
+      text-decoration: none;
+    }
+    .text-link:hover { text-decoration: underline; }
+
+    .forgot-email { margin-top: -12px; margin-bottom: 32px; }
+
+    /* ============================================================
+       GUEST MODE BLOCK
+       ============================================================ */
+    .guest-mode {
+      font-size: 14px;
+      line-height: 20px;
+      color: var(--md-on-surface-variant);
+      margin-bottom: 32px;
+    }
+    .guest-mode p { margin-bottom: 4px; }
+
+    /* ============================================================
+       ACTION ROW  (Create account  +  Next)
+       ============================================================ */
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      margin-bottom: 32px;
+    }
+
+    .btn-text {
+      background: none;
+      border: none;
+      font-family: var(--md-font);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
+      color: var(--md-secondary);
+      cursor: pointer;
+      padding: 10px 16px;
+      border-radius: var(--md-radius-button);
+      transition: background .15s;
+    }
+    .btn-text:hover { background: var(--md-primary-container); }
+
+    .btn-filled {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      border: none;
+      font-family: var(--md-font);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
+      padding: 10px 24px;
+      border-radius: var(--md-radius-button);
+      cursor: pointer;
+      transition: box-shadow .15s, background .15s;
+    }
+    .btn-filled:hover {
+      background: #0a4db8;
+      box-shadow: 0 1px 3px rgba(11,87,208,.3),
+                  0 1px 2px rgba(11,87,208,.15);
+    }
+    .btn-filled:disabled {
+      background: var(--md-surface-container);
+      color: var(--md-on-surface-variant);
+      cursor: default;
+      box-shadow: none;
+    }
+
+    /* ============================================================
+       PASSWORD STEP  (hidden by default)
+       ============================================================ */
+    .step-password { display: none; }
+
+    .account-chip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid var(--md-outline);
+      border-radius: 16px;
+      padding: 4px 8px 4px 4px;
+      margin: 0 auto 24px;
+      width: fit-content;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .account-chip:hover { background: var(--md-surface-container); }
+
+    .account-chip .avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--md-primary-container);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--md-primary);
+    }
+
+    .show-password {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      line-height: 20px;
+      color: var(--md-on-surface);
+      margin-top: -8px;
+      margin-bottom: 24px;
+      cursor: pointer;
+    }
+    .show-password input { width: 18px; height: 18px; accent-color: var(--md-primary); }
+
+    /* ============================================================
+       FOOTER  (language selector, Help, Privacy, Terms)
+       ============================================================ */
+    .page-footer {
+      padding: 24px 16px;
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--md-on-surface-variant);
+    }
+
+    .footer-inner {
+      max-width: 450px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .lang-select {
+      background: none;
+      border: none;
+      font-family: var(--md-font);
+      font-size: 12px;
+      color: var(--md-on-surface-variant);
+      cursor: pointer;
+      padding: 4px 0;
+    }
+    .lang-select:hover { color: var(--md-on-surface); }
+
+    .footer-links {
+      display: flex;
+      gap: 16px;
+    }
+    .footer-links a {
+      color: var(--md-on-surface-variant);
+      text-decoration: none;
+    }
+    .footer-links a:hover { color: var(--md-on-surface); }
+
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+    @media (max-width: 520px) {
+      .card { padding: 32px 24px 24px; box-shadow: none; background: transparent; }
+      body { background: var(--md-surface); }
+      .footer-inner { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="main">
+    <div class="card">
+
+      <!-- ===== Google logo (four-colour) ===== -->
+      <svg class="google-logo" viewBox="0 0 48 48" aria-label="Google">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+
+      <!-- ============================================================
+           STEP 1 — EMAIL
+           ============================================================ -->
+      <div class="step-email" id="stepEmail">
+        <h1>Sign in</h1>
+        <p class="subtitle">Use your Google Account</p>
+
+        <div class="field" id="emailField">
+          <input type="email" id="emailInput" placeholder=" " autocomplete="username" />
+          <label for="emailInput">Email or phone</label>
+          <span class="error-msg" id="emailError">Enter a valid email or phone number</span>
+        </div>
+
+        <button class="text-link forgot-email" id="forgotEmail">Forgot email?</button>
+
+        <div class="guest-mode">
+          <p>Not your computer? Use Guest mode to sign in privately.</p>
+          <a class="text-link" href="#" id="learnMore">Learn more about using Guest mode</a>
+        </div>
+
+        <div class="actions">
+          <button class="btn-text" id="createAccount">Create account</button>
+          <button class="btn-filled" id="nextBtn">Next</button>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           STEP 2 — PASSWORD
+           ============================================================ -->
+      <div class="step-password" id="stepPassword">
+        <h1>Welcome</h1>
+
+        <div class="account-chip" id="accountChip">
+          <span class="avatar" id="avatarLetter">A</span>
+          <span id="accountEmail">user@example.com</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+
+        <div class="field" id="passwordField">
+          <input type="password" id="passwordInput" placeholder=" " autocomplete="current-password" />
+          <label for="passwordInput">Enter your password</label>
+          <span class="error-msg" id="passwordError">Enter a password</span>
+        </div>
+
+        <label class="show-password">
+          <input type="checkbox" id="showPasswordToggle" />
+          Show password
+        </label>
+
+        <button class="text-link forgot-email" id="forgotPassword" style="margin-bottom:32px;">Forgot password?</button>
+
+        <div class="actions" style="justify-content:flex-end;">
+          <button class="btn-filled" id="signInBtn">Next</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="page-footer">
+    <div class="footer-inner">
+      <select class="lang-select" aria-label="Change language">
+        <option>English (United States)</option>
+        <option>English (United Kingdom)</option>
+        <option>Español</option>
+        <option>Français</option>
+        <option>Deutsch</option>
+        <option>हिन्दी</option>
+        <option>中文（简体）</option>
+        <option>日本語</option>
+      </select>
+      <div class="footer-links">
+        <a href="#">Help</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================================
+       JAVASCRIPT  —  two-step flow + validation
+       ============================================================ -->
+  <script>
+    (function () {
+      'use strict';
+
+      const stepEmail    = document.getElementById('stepEmail');
+      const stepPassword = document.getElementById('stepPassword');
+
+      const emailInput   = document.getElementById('emailInput');
+      const emailField   = document.getElementById('emailField');
+      const emailError   = document.getElementById('emailError');
+      const nextBtn      = document.getElementById('nextBtn');
+
+      const passwordInput  = document.getElementById('passwordInput');
+      const passwordField  = document.getElementById('passwordField');
+      const passwordError  = document.getElementById('passwordError');
+      const signInBtn      = document.getElementById('signInBtn');
+      const showPassword   = document.getElementById('showPasswordToggle');
+
+      const accountEmail  = document.getElementById('accountEmail');
+      const avatarLetter  = document.getElementById('avatarLetter');
+
+      /* ---------- validation helpers ---------- */
+      const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      const isValidPhone = (v) => /^\+?[\d\s\-()]{7,15}$/.test(v);
+
+      function setError(field, msgEl, show) {
+        field.classList.toggle('has-error', show);
+      }
+
+      /* ---------- STEP 1 → STEP 2 ---------- */
+      nextBtn.addEventListener('click', function () {
+        const value = emailInput.value.trim();
+        const ok = value.length > 0 && (isValidEmail(value) || isValidPhone(value));
+
+        setError(emailField, emailError, !ok);
+        if (!ok) { emailInput.focus(); return; }
+
+        /* populate step 2 */
+        accountEmail.textContent = value;
+        avatarLetter.textContent = value.charAt(0).toUpperCase();
+
+        stepEmail.style.display   = 'none';
+        stepPassword.style.display = 'block';
+        passwordInput.focus();
+      });
+
+      /* live clear error */
+      emailInput.addEventListener('input', () => setError(emailField, emailError, false));
+
+      /* ---------- SHOW / HIDE PASSWORD ---------- */
+      showPassword.addEventListener('change', function () {
+        passwordInput.type = this.checked ? 'text' : 'password';
+      });
+
+      /* ---------- STEP 2 SUBMIT ---------- */
+      signInBtn.addEventListener('click', function () {
+        const value = passwordInput.value;
+        const ok = value.length >= 6;
+
+        setError(passwordField, passwordError, !ok);
+        if (!ok) { passwordInput.focus(); return; }
+
+        /* demo: simulate loading */
+        signInBtn.disabled = true;
+        signInBtn.textContent = 'Signing in…';
+
+        setTimeout(() => {
+          alert('Demo only — no real authentication happens.');
+          signInBtn.disabled = false;
+          signInBtn.textContent = 'Next';
+        }, 1200);
+      });
+
+      passwordInput.addEventListener('input', () => setError(passwordField, passwordError, false));
+
+      /* ---------- DEAD LINKS ---------- */
+      document.querySelectorAll('a[href="#"]').forEach((a) =>
+        a.addEventListener('click', (e) => e.preventDefault())
+      );
+
+      /* ---------- Account chip (demo: go back) ---------- */
+      document.getElementById('accountChip').addEventListener('click', function () {
+        stepPassword.style.display = 'none';
+        stepEmail.style.display    = 'block';
+        emailInput.focus();
+      });
+    })();
+  </script>
+
+</body>
+</html>

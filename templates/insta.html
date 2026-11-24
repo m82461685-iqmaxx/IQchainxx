@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram • Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Grand+Hotel&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ig-bg: #fafafa;
+      --ig-card: #ffffff;
+      --ig-border: #dbdbdb;
+      --ig-text: #262626;
+      --ig-gray: #8e8e8e;
+      --ig-blue: #0095f6;
+      --ig-blue-hover: #1877f2;
+      --ig-blue-active: #0f6ee0;
+      --ig-fb: #385185;
+      --ig-input-bg: #f5f5f5;
+      --ig-error: #ed4956;
+      --ig-error-bg: #fef2f3;
+      --ig-error-border: #f8d7da;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--ig-bg);
+      color: var(--ig-text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      animation: pageFadeIn 0.3s ease-in;
+    }
+
+    @keyframes pageFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    a { color: var(--ig-blue); text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+
+    /* ===== LAYOUT ===== */
+    .main-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .content-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      width: 100%;
+      max-width: 935px;
+      margin-top: 52px;
+      padding-bottom: 32px;
+    }
+
+    /* ===== PHONE MOCKUP ===== */
+    .phone-column { display: none; justify-content: flex-end; }
+
+    .phone-frame {
+      position: relative;
+      width: 300px;
+      height: 580px;
+      background: #000;
+      border-radius: 40px;
+      padding: 12px;
+      box-shadow: 0 0 0 8px #1a1a1a, 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    .phone-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      border-radius: 28px;
+      overflow: hidden;
+    }
+
+    .phone-slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      background-size: cover;
+      background-position: center;
+      background-color: #f0f0f0;
+    }
+
+    .phone-slide.active { opacity: 1; }
+
+    /* ===== FORM COLUMN ===== */
+    .form-column {
+      width: 100%;
+      max-width: 350px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      background: var(--ig-card);
+      border: 1px solid var(--ig-border);
+      border-radius: 1px;
+      padding: 40px 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .card--signup {
+      padding: 20px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    /* ===== LOGO (FIXED — no clipping) ===== */
+    .logo {
+      font-family: 'Grand Hotel', cursive;
+      font-size: 50px;
+      font-weight: 400;
+      line-height: 1.1;
+      margin-bottom: 32px;
+      background: linear-gradient(
+        45deg,
+        #405DE6, #5851DB, #833AB4, #C13584, #E1306C,
+        #FD1D1D, #F56040, #F77737, #FCAF45, #FFDC80
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+      user-select: none;
+      white-space: nowrap;
+      padding: 0 4px; /* tiny breathing room so gradient edge isn't clipped */
+    }
+
+    /* ===== FORM ===== */
+    .login-form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* ===== FLOATING LABEL ===== */
+    .field { position: relative; }
+
+    .field input {
+      width: 100%;
+      height: 38px;
+      padding: 9px 8px 7px;
+      background: var(--ig-input-bg);
+      border: 1px solid var(--ig-border);
+      border-radius: 3px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--ig-text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus { border-color: #a8a8a8; }
+
+    .field label {
+      position: absolute;
+      left: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: var(--ig-gray);
+      pointer-events: none;
+      transition: top 0.15s ease, transform 0.15s ease, font-size 0.15s ease;
+      background: var(--ig-input-bg);
+      padding: 0 2px;
+    }
+
+    .field input:focus + label,
+    .field input:not(:placeholder-shown) + label {
+      top: 0;
+      transform: translateY(-50%);
+      font-size: 10px;
+    }
+
+    .field--password input { padding-right: 60px; }
+
+    .password-toggle {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--ig-text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 4px;
+    }
+
+    .password-toggle:hover { color: var(--ig-gray); }
+
+    /* ===== LOGIN BUTTON (FIXED — no blue "hiding") ===== */
+    .btn-login {
+      width: 100%;
+      padding: 7px;
+      margin-top: 8px;
+      background: var(--ig-blue);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s ease, opacity 0.15s ease;
+      opacity: 1; /* stays bright blue — no dimming */
+    }
+
+    .btn-login:hover:not(:disabled) { background: var(--ig-blue-hover); }
+    .btn-login:active:not(:disabled) { background: var(--ig-blue-active); }
+
+    .btn-login:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    /* Loading state keeps full opacity even while disabled */
+    .btn-login.loading:disabled { opacity: 1; cursor: wait; }
+
+    .btn-login:focus-visible {
+      outline: 2px solid var(--ig-fb);
+      outline-offset: 2px;
+    }
+
+    .btn-login.loading {
+      position: relative;
+      color: transparent;
+    }
+
+    .btn-login.loading::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      margin: -8px 0 0 -8px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== SEPARATOR ===== */
+    .separator {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      margin: 14px 0 22px;
+    }
+
+    .separator .line { flex: 1; height: 1px; background: var(--ig-border); }
+
+    .separator .text {
+      padding: 0 18px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ig-gray);
+    }
+
+    /* ===== FACEBOOK ===== */
+    .btn-facebook {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ig-fb);
+      margin-bottom: 16px;
+      padding: 8px;
+    }
+
+    .btn-facebook:hover { color: #2a3f63; }
+    .btn-facebook svg { width: 18px; height: 18px; fill: var(--ig-fb); }
+
+    /* ===== FORGOT ===== */
+    .forgot {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ig-text);
+      margin-top: 12px;
+    }
+
+    /* ===== APP BADGES ===== */
+    .app-badges {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .app-badges img {
+      height: 40px;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .app-badges img:hover { transform: scale(1.04); }
+
+    /* ===== ERROR BANNER ===== */
+    .error-banner {
+      display: none;
+      background: var(--ig-error-bg);
+      border: 1px solid var(--ig-error-border);
+      color: var(--ig-error);
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      text-align: center;
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    .error-banner.visible {
+      display: block;
+      animation: shake 0.3s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    /* ===== FOOTER ===== */
+    .page-footer {
+      padding: 32px 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--ig-gray);
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 16px;
+      margin-bottom: 16px;
+    }
+
+    .footer-links a { color: inherit; font-weight: 400; }
+
+    .footer-meta {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (min-width: 876px) {
+      .phone-column { display: flex; }
+      .card { min-height: 400px; justify-content: center; }
+    }
+
+    @media (max-width: 875px) {
+      .phone-column { display: none; }
+      .content-wrapper { max-width: 350px; margin-top: 24px; }
+      .card { background: transparent; border: none; padding: 0; }
+    }
+
+    @media (max-width: 480px) {
+      .app-badges { flex-direction: column; align-items: center; }
+      .footer-links { gap: 6px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="main-container">
+    <div class="content-wrapper">
+      <!-- Left: phone mockup -->
+      <div class="phone-column" aria-hidden="true">
+        <div class="phone-frame">
+          <div class="phone-screen" id="phoneScreen"></div>
+        </div>
+      </div>
+
+      <!-- Right: login form -->
+      <div class="form-column">
+        <div class="card">
+          <h1 class="logo">Instagram</h1>
+
+          <div class="error-banner" id="errorBanner" role="alert"></div>
+
+          <form class="login-form" id="loginForm" novalidate>
+            <div class="field">
+              <input type="text" id="username" placeholder=" " autocomplete="username" />
+              <label for="username">Phone number, username, or email</label>
+            </div>
+
+            <div class="field field--password">
+              <input type="password" id="password" placeholder=" " autocomplete="current-password" />
+              <label for="password">Password</label>
+              <button type="button" class="password-toggle" id="togglePassword" aria-label="Show password">Show</button>
+            </div>
+
+            <button type="submit" class="btn-login" id="loginBtn" disabled>Log in</button>
+          </form>
+
+          <div class="separator">
+            <div class="line"></div>
+            <div class="text">OR</div>
+            <div class="line"></div>
+          </div>
+
+          <button class="btn-facebook" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            <span>Log in with Facebook</span>
+          </button>
+
+          <a href="#" class="forgot" id="forgotLink">Forgot password?</a>
+        </div>
+
+        <div class="card card--signup">
+          Don't have an account? <a href="#" id="signupLink">Sign up</a>
+        </div>
+
+        <div class="app-badges">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="Download on the App Store" />
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="page-footer">
+    <div class="footer-links">
+      <a href="#">Meta</a><a href="#">About</a><a href="#">Blog</a><a href="#">Jobs</a><a href="#">Help</a><a href="#">API</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Locations</a><a href="#">Instagram Lite</a><a href="#">Threads</a><a href="#">Contact Uploading & Non-Users</a><a href="#">Meta Verified</a>
+    </div>
+    <div class="footer-meta">
+      <span>English (UK)</span>
+      <span>© 2026 Instagram from Meta</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ---------- Element refs ---------- */
+      const form           = document.getElementById('loginForm');
+      const usernameInput  = document.getElementById('username');
+      const passwordInput  = document.getElementById('password');
+      const loginBtn       = document.getElementById('loginBtn');
+      const togglePassBtn  = document.getElementById('togglePassword');
+      const errorBanner    = document.getElementById('errorBanner');
+      const phoneScreen    = document.getElementById('phoneScreen');
+
+      /* ---------- Phone slideshow ---------- */
+      const slideSeeds = ['ig1', 'ig2', 'ig3', 'ig4'];
+      slideSeeds.forEach((seed, i) => {
+        const div = document.createElement('div');
+        div.className = 'phone-slide' + (i === 0 ? ' active' : '');
+        div.style.backgroundImage = `url(https://picsum.photos/seed/${seed}/300/580)`;
+        phoneScreen.appendChild(div);
+      });
+
+      const slides = phoneScreen.querySelectorAll('.phone-slide');
+      let slideIdx = 0;
+      if (slides.length > 1) {
+        setInterval(() => {
+          slides[slideIdx].classList.remove('active');
+          slideIdx = (slideIdx + 1) % slides.length;
+          slides[slideIdx].classList.add('active');
+        }, 3000);
+      }
+
+      /* ---------- Password visibility ---------- */
+      togglePassBtn.addEventListener('click', () => {
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        togglePassBtn.textContent = isPassword ? 'Hide' : 'Show';
+        togglePassBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        passwordInput.focus();
+      });
+
+      /* ---------- Enable/disable login button ---------- */
+      function updateButtonState() {
+        const ready = usernameInput.value.trim().length > 0 &&
+                      passwordInput.value.length > 0;
+        loginBtn.disabled = !ready;
+      }
+      usernameInput.addEventListener('input', updateButtonState);
+      passwordInput.addEventListener('input', updateButtonState);
+      updateButtonState();
+
+      /* ---------- Error banner ---------- */
+      function showError(msg) {
+        errorBanner.textContent = msg;
+        errorBanner.classList.remove('visible');
+        // force reflow so the shake animation replays
+        void errorBanner.offsetWidth;
+        errorBanner.classList.add('visible');
+      }
+
+      function hideError() {
+        errorBanner.classList.remove('visible');
+      }
+
+      usernameInput.addEventListener('input', hideError);
+      passwordInput.addEventListener('input', hideError);
+
+      /* ---------- Submit handler ---------- */
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); // always — never reload the page
+        hideError();
+
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!username) {
+          showError('Please enter your phone number, username, or email.');
+          usernameInput.focus();
+          return;
+        }
+
+        if (!password) {
+          showError('Please enter your password.');
+          passwordInput.focus();
+          return;
+        }
+
+        if (password.length < 6) {
+          showError('Sorry, your password was incorrect. Please double-check your password.');
+          passwordInput.focus();
+          return;
+        }
+
+        /* Loading state */
+        loginBtn.classList.add('loading');
+        loginBtn.disabled = true;
+
+        setTimeout(() => {
+          loginBtn.classList.remove('loading');
+          loginBtn.disabled = false;
+          updateButtonState(); // restore correct state
+          showError('Sorry, your password was incorrect. Please double-check your password.');
+        }, 1500);
+      });
+
+      /* ---------- Kill dead links ---------- */
+      document.querySelectorAll('a[href="#"]').forEach((a) =>
+        a.addEventListener('click', (e) => e.preventDefault())
+      );
+    })();
+  </script>
+</body>
+</html>

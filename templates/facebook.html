@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facebook – log in or sign up</title>
+  <style>
+    /* ------------------------------
+       Base / Reset
+    ------------------------------ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --fb-blue: #1877f2;
+      --fb-blue-dark: #166fe5;
+      --fb-green: #42b72a;
+      --fb-green-dark: #36a420;
+      --fb-text: #1c1e21;
+      --fb-muted: #606770;
+      --fb-bg: #f0f2f5;
+      --fb-border: #dadde1;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+      background-color: var(--fb-bg);
+      color: var(--fb-text);
+      -webkit-font-smoothing: antialiased;
+
+      /* Push footer down */
+      display: flex;
+      flex-direction: column;
+    }
+
+    a {
+      text-decoration: none;
+      color: var(--fb-blue);
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Accessibility helper */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ------------------------------
+       Page / Layout
+    ------------------------------ */
+    .page {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 72px 20px 60px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 980px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+    }
+
+    /* ------------------------------
+       Left branding side
+    ------------------------------ */
+    .hero {
+      flex: 1;
+      max-width: 500px;
+      padding-bottom: 40px;
+    }
+
+    .logo {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      color: var(--fb-blue);
+      margin-bottom: 8px;
+      user-select: none;
+    }
+
+    .tagline {
+      font-size: 28px;
+      line-height: 32px;
+      font-weight: 400;
+      color: var(--fb-text);
+      max-width: 430px;
+    }
+
+    /* ------------------------------
+       Login card
+    ------------------------------ */
+    .card {
+      width: 396px;
+      flex-shrink: 0;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
+      padding: 20px 20px 24px;
+      text-align: center;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-form input {
+      width: 100%;
+      height: 52px;
+      padding: 14px 16px;
+      font-size: 17px;
+      color: var(--fb-text);
+      background: #fff;
+      border: 1px solid var(--fb-border);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .login-form input::placeholder {
+      color: #90949c;
+    }
+
+    .login-form input:focus {
+      border-color: var(--fb-blue);
+      box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
+    }
+
+    /* Password field with show/hide eye button */
+    .input-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .input-wrap input {
+      margin-bottom: 0;
+      padding-right: 52px;
+    }
+
+    .toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 6px;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      background: transparent;
+      border: none;
+      border-radius: 50%;
+      color: #90949c;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .toggle-password:hover {
+      background: #f0f2f5;
+      color: var(--fb-text);
+    }
+
+    .toggle-password:focus-visible {
+      outline: 2px solid var(--fb-blue);
+      outline-offset: 2px;
+    }
+
+    .toggle-password .icon-eye-off {
+      display: none;
+    }
+
+    .toggle-password.is-visible .icon-eye {
+      display: none;
+    }
+
+    .toggle-password.is-visible .icon-eye-off {
+      display: block;
+    }
+
+    /* ------------------------------
+       Buttons
+    ------------------------------ */
+    .btn {
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.06s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.99);
+    }
+
+    .btn-primary {
+      height: 48px;
+      font-size: 20px;
+      background-color: var(--fb-blue);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--fb-blue-dark);
+    }
+
+    .btn-success {
+      align-self: center;
+      height: 48px;
+      font-size: 17px;
+      padding: 0 16px;
+      background-color: var(--fb-green);
+    }
+
+    .btn-success:hover {
+      background-color: var(--fb-green-dark);
+    }
+
+    /* ------------------------------
+       Links / divider
+    ------------------------------ */
+    .forgot {
+      display: inline-block;
+      margin: 16px 0;
+      font-size: 14px;
+      color: var(--fb-blue);
+    }
+
+    .forgot:hover {
+      text-decoration: underline;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--fb-border);
+      margin: 6px 0 20px;
+    }
+
+    .create-page {
+      margin-top: 22px;
+      font-size: 14px;
+      color: var(--fb-text);
+    }
+
+    /* ------------------------------
+       Footer
+    ------------------------------ */
+    .footer {
+      background: #fff;
+      padding: 24px 20px;
+      font-size: 12px;
+      color: var(--fb-muted);
+    }
+
+    .footer-inner {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .langs,
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+    }
+
+    .langs a,
+    .footer-links a {
+      color: var(--fb-muted);
+    }
+
+    .langs a:hover,
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
+    .footer hr {
+      border: none;
+      border-top: 1px solid var(--fb-border);
+      margin: 12px 0;
+    }
+
+    .copyright {
+      margin-top: 14px;
+    }
+
+    /* ------------------------------
+       Responsive
+    ------------------------------ */
+    @media (max-width: 900px) {
+      .page {
+        padding: 40px 16px;
+      }
+
+      .container {
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .hero {
+        text-align: center;
+        padding-bottom: 0;
+      }
+
+      .logo {
+        font-size: 44px;
+      }
+
+      .tagline {
+        font-size: 22px;
+        line-height: 26px;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .card {
+        width: 100%;
+        padding: 16px;
+      }
+
+      .logo {
+        font-size: 38px;
+      }
+
+      .tagline {
+        font-size: 19px;
+        line-height: 23px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="container">
+
+      <!-- Left / Brand side -->
+      <section class="hero">
+        <h1 class="logo">facebook</h1>
+        <p class="tagline">
+          Connect with friends and the world around you on Facebook.
+        </p>
+      </section>
+
+      <!-- Right / Login card -->
+      <section class="card">
+        <form class="login-form" action="#" method="post" novalidate>
+          <label class="sr-only" for="email">Email or phone number</label>
+          <input
+            id="email"
+            name="email"
+            type="text"
+            placeholder="Email or phone number"
+            autocomplete="username"
+            required
+          />
+
+          <div class="input-wrap">
+            <label class="sr-only" for="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Password"
+              autocomplete="current-password"
+              required
+            />
+
+            <button
+              type="button"
+              class="toggle-password"
+              id="togglePassword"
+              aria-label="Show password"
+              aria-pressed="false"
+              title="Show password"
+            >
+              <!-- Eye (hidden password) -->
+              <svg
+                class="icon-eye"
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+
+              <!-- Eye with slash (visible password) -->
+              <svg
+                class="icon-eye-off"
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </button>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Log In</button>
+
+          <a class="forgot" href="#">Forgotten password?</a>
+
+          <hr class="divider" />
+
+          <button type="button" class="btn btn-success">Create New Account</button>
+        </form>
+
+        <p class="create-page">
+          <a href="#"><strong>Create a Page</strong></a>
+          for a celebrity, brand or business.
+        </p>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <ul class="langs">
+        <li><a href="#">English (UK)</a></li>
+        <li><a href="#">Hausa</a></li>
+        <li><a href="#">Français (France)</a></li>
+        <li><a href="#">Português (Brasil)</a></li>
+        <li><a href="#">Español</a></li>
+        <li><a href="#">Deutsch</a></li>
+        <li><a href="#">Italiano</a></li>
+      </ul>
+
+      <hr />
+
+      <ul class="footer-links">
+        <li><a href="#">Sign Up</a></li>
+        <li><a href="#">Log In</a></li>
+        <li><a href="#">Messenger</a></li>
+        <li><a href="#">Facebook Lite</a></li>
+        <li><a href="#">Video</a></li>
+        <li><a href="#">Places</a></li>
+        <li><a href="#">Games</a></li>
+        <li><a href="#">Marketplace</a></li>
+        <li><a href="#">Meta Pay</a></li>
+        <li><a href="#">Meta Store</a></li>
+        <li><a href="#">Meta Quest</a></li>
+        <li><a href="#">Instagram</a></li>
+        <li><a href="#">Threads</a></li>
+        <li><a href="#">Fundraisers</a></li>
+        <li><a href="#">Services</a></li>
+        <li><a href="#">Voting Information Centre</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Privacy Centre</a></li>
+        <li><a href="#">Groups</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Create ad</a></li>
+        <li><a href="#">Create Page</a></li>
+        <li><a href="#">Developers</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Cookies</a></li>
+        <li><a href="#">AdChoices</a></li>
+        <li><a href="#">Terms</a></li>
+        <li><a href="#">Help</a></li>
+      </ul>
+
+      <p class="copyright">Meta &copy; 2026</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var toggleBtn = document.getElementById("togglePassword");
+      var passwordInput = document.getElementById("password");
+      if (!toggleBtn || !passwordInput) return;
+
+      toggleBtn.addEventListener("click", function () {
+        var show = passwordInput.type === "password";
+
+        passwordInput.type = show ? "text" : "password";
+        toggleBtn.classList.toggle("is-visible", show);
+        toggleBtn.setAttribute("aria-pressed", String(show));
+
+        var label = show ? "Hide password" : "Show password";
+        toggleBtn.setAttribute("aria-label", label);
+        toggleBtn.title = label;
+
+        // Keep the cursor in the field after toggling
+        passwordInput.focus();
+      });
+    })();
+  </script>
+</body>
+</html>

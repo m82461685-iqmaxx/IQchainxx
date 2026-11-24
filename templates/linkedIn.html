@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LinkedIn Login</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:#fff;color:rgba(0,0,0,.9);min-height:100vh;
+    display:flex;flex-direction:column;
+  }
+
+  /* ---------- Header ---------- */
+  .topbar{padding:16px 0 0;max-width:1128px;width:100%;margin:0 auto;padding-left:16px}
+  .logo{display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+  .logo svg{width:34px;height:34px}
+  .logo span{font-size:22px;font-weight:700;color:#0a66c2;letter-spacing:-.3px}
+
+  /* ---------- Card ---------- */
+  main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:28px 16px 48px}
+  .card{width:100%;max-width:400px}
+  .card h1{font-size:32px;font-weight:600;line-height:1.25;margin-bottom:6px}
+  .card .hint{font-size:14px;color:rgba(0,0,0,.6);margin-bottom:24px}
+
+  .field{margin-bottom:16px;position:relative}
+  label.fl{display:block;font-size:14px;font-weight:500;margin-bottom:6px;color:rgba(0,0,0,.9)}
+  input[type=text],input[type=email],input[type=password]{
+    width:100%;height:52px;padding:0 14px;font-size:16px;
+    border:1px solid rgba(0,0,0,.6);border-radius:4px;background:#fff;
+    outline:none;transition:border-color .15s,box-shadow .15s;
+  }
+  input:focus{border-color:#0a66c2;box-shadow:0 0 0 1px #0a66c2}
+  input.invalid{border-color:#b24020;box-shadow:0 0 0 1px #b24020}
+
+  .pass-wrap{position:relative}
+  .pass-wrap input{padding-right:56px}
+  .toggle{
+    position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    background:none;border:none;color:#0a66c2;font-size:14px;font-weight:600;
+    cursor:pointer;padding:8px;border-radius:4px;
+  }
+  .toggle:hover{background:rgba(10,102,194,.08)}
+
+  .err{display:none;font-size:13px;color:#b24020;margin-top:6px;line-height:1.4}
+  .err.show{display:block}
+
+  .forgot{display:inline-block;font-size:14px;font-weight:600;color:#0a66c2;
+          text-decoration:none;margin:2px 0 16px}
+  .forgot:hover{text-decoration:underline}
+
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+  .row input{width:16px;height:16px;accent-color:#0a66c2;cursor:pointer}
+  .row label{font-size:14px;color:rgba(0,0,0,.9);cursor:pointer}
+
+  .btn{
+    width:100%;height:52px;border-radius:28px;font-size:16px;font-weight:600;
+    cursor:pointer;border:none;transition:background .15s,box-shadow .15s;
+  }
+  .btn-primary{background:#0a66c2;color:#fff}
+  .btn-primary:hover{background:#004182}
+  .btn-primary:disabled{background:#0a66c2;opacity:.55;cursor:not-allowed}
+
+  .divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:rgba(0,0,0,.6);font-size:14px}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:rgba(0,0,0,.15)}
+
+  .btn-apple{
+    background:#fff;color:rgba(0,0,0,.9);border:1px solid rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-apple:hover{background:rgba(0,0,0,.04)}
+
+  .join{text-align:center;font-size:15px;margin-top:24px;color:rgba(0,0,0,.9)}
+  .join a{color:#0a66c2;font-weight:600;text-decoration:none}
+  .join a:hover{text-decoration:underline}
+
+  /* ---------- Success / Register ---------- */
+  .hidden{display:none!important}
+  .success{text-align:center;padding:8px 0 4px}
+  .success .tick{
+    width:64px;height:64px;border-radius:50%;background:#e6f4ea;color:#057642;
+    display:grid;place-items:center;margin:0 auto 16px;font-size:34px;font-weight:700;
+  }
+  .success h2{font-size:24px;font-weight:600;margin-bottom:8px}
+  .success p{font-size:14px;color:rgba(0,0,0,.6);line-height:1.5;margin-bottom:20px}
+  .link-btn{background:none;border:none;color:#0a66c2;font-weight:600;
+            font-size:15px;cursor:pointer;padding:8px}
+  .link-btn:hover{text-decoration:underline}
+
+  footer{
+    text-align:center;font-size:12px;color:rgba(0,0,0,.5);
+    padding:16px;border-top:1px solid rgba(0,0,0,.08);
+  }
+  footer a{color:rgba(0,0,0,.5);text-decoration:none;margin:0 6px}
+  footer a:hover{text-decoration:underline;color:#0a66c2}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="logo" href="#" aria-label="LinkedIn">
+    <svg viewBox="0 0 84 84" xmlns="http://www.w3.org/2000/svg">
+      <rect width="84" height="84" rx="8" fill="#0A66C2"/>
+      <path fill="#fff" d="M22 33h11v29H22zM27.5 20a6.4 6.4 0 1 1 0 12.8 6.4 6.4 0 0 1 0-12.8zM39 33h10.5v4h.2c1.5-2.7 5-5.4 10.2-5.4 10.9 0 12.9 6.6 12.9 15.3V62H62V48.6c0-3.2-.1-7.3-4.6-7.3s-5.3 3.5-5.3 7.1V62H41z"/>
+    </svg>
+    <span>LinkedIn</span>
+  </a>
+</header>
+
+<main>
+  <!-- ================= LOGIN ================= -->
+  <section class="card" id="loginView">
+    <h1>Sign in</h1>
+    <p class="hint">Stay updated on your professional world</p>
+
+    <form id="loginForm" novalidate autocomplete="on">
+      <div class="field">
+        <label class="fl" for="email">Email or phone</label>
+        <input id="email" name="email" type="text" autocomplete="username" />
+        <p class="err" id="emailErr"></p>
+      </div>
+
+      <div class="field">
+        <label class="fl" for="password">Password</label>
+        <div class="pass-wrap">
+          <input id="password" name="password" type="password" autocomplete="current-password" />
+          <button type="button" class="toggle" id="togglePass">Show</button>
+        </div>
+        <p class="err" id="passwordErr"></p>
+      </div>
+
+      <a class="forgot" href="#" id="forgotLink">Forgot password?</a>
+
+      <div class="row">
+        <input type="checkbox" id="keep" />
+        <label for="keep">Keep me logged in</label>
+      </div>
+
+      <button class="btn btn-primary" type="submit" id="signInBtn">Sign in</button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <button class="btn btn-apple" type="button" id="appleBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M16.365 1.43c0 1.14-.42 2.2-1.26 3.03-.9.9-2 .9-1.98.9-.03-1.1.4-2.2 1.24-3.03.84-.83 2.02-.9 2-.9zm3.2 15.6c-.35.8-.52 1.16-.97 1.87-.63.98-1.53 2.2-2.63 2.2-.98.02-1.24-.63-2.57-.62-1.33.01-1.61.65-2.6.63-1.1-.01-1.94-1.12-2.57-2.1-1.77-2.74-1.96-5.96-.87-7.67.78-1.22 2-1.93 3.15-1.93 1.17 0 1.9.64 2.87.64.94 0 1.51-.64 2.86-.64 1.02 0 2.1.55 2.87 1.51-2.52 1.38-2.11 4.98.46 6.11z"/>
+      </svg>
+      Sign in with Apple
+    </button>
+
+    <p class="join">New to LinkedIn? <a href="#" id="joinLink">Join now</a></p>
+  </section>
+
+  <!-- ================= REGISTER ================= -->
+  <section class="card hidden" id="registerView">
+    <h1>Join LinkedIn</h1>
+    <p class="hint">Create your account to get started</p>
+
+    <form id="registerForm" novalidate>
+      <div class="field">
+        <label class="fl" for="regName">Full name</label>
+        <input id="regName" type="text" autocomplete="name" />
+        <p class="err" id="regNameErr"></p>
+      </div>
+
+      <div class="field">
+        <label class="fl" for="regEmail">Email</label>
+        <input id="regEmail" type="email" autocomplete="email" />
+        <p class="err" id="regEmailErr"></p>
+      </div>
+
+      <div class="field">
+        <label class="fl" for="regPass">Password (6+ characters)</label>
+        <div class="pass-wrap">
+          <input id="regPass" type="password" autocomplete="new-password" />
+          <button type="button" class="toggle" id="toggleRegPass">Show</button>
+        </div>
+        <p class="err" id="regPassErr"></p>
+      </div>
+
+      <button class="btn btn-primary" type="submit">Agree &amp; Join</button>
+    </form>
+
+    <p class="join">Already on LinkedIn? <a href="#" id="signInLink">Sign in</a></p>
+  </section>
+
+  <!-- ================= SUCCESS ================= -->
+  <section class="card hidden" id="successView">
+    <div class="success">
+      <div class="tick">✓</div>
+      <h2 id="successTitle">You're in</h2>
+      <p id="successText"></p>
+      <button class="link-btn" id="signOutLink">Sign out</button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <a href="#">User Agreement</a> ·
+  <a href="#">Privacy Policy</a> ·
+  <a href="#">Cookie Policy</a>
+  <div style="margin-top:8px">Student Project © 2026</div>
+</footer>
+
+<script>
+/* =========================================================
+   ACCOUNT STORE  (localStorage — browser only, no server)
+   ========================================================= */
+const STORE_KEY   = 'li_accounts_v1';
+const SESSION_KEY = 'li_session_v1';
+const REMEMBER_KEY= 'li_remember_v1';
+
+function loadAccounts() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveAccounts(accounts) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(accounts));
+}
+
+/* Seed one default account the first time the page runs */
+(function seed() {
+  const accounts = loadAccounts();
+  if (!accounts['student@example.com']) {
+    accounts['student@example.com'] = { name: 'Student', password: 'Student@123' };
+    saveAccounts(accounts);
+  }
+})();
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+const $ = id => document.getElementById(id);
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PHONE_RE = /^\+?[0-9\s\-()]{10,15}$/;
+
+function isEmailOrPhone(value) {
+  return EMAIL_RE.test(value) || PHONE_RE.test(value);
+}
+
+function setError(inputEl, errEl, message) {
+  if (message) {
+    errEl.textContent = message;
+    errEl.classList.add('show');
+    inputEl.classList.add('invalid');
+    inputEl.setAttribute('aria-invalid', 'true');
+  } else {
+    errEl.textContent = '';
+    errEl.classList.remove('show');
+    inputEl.classList.remove('invalid');
+    inputEl.removeAttribute('aria-invalid');
+  }
+}
+
+function showView(view) {
+  ['loginView', 'registerView', 'successView'].forEach(id => {
+    $(id).classList.toggle('hidden', id !== view);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* =========================================================
+   PASSWORD SHOW / HIDE
+   ========================================================= */
+function wireToggle(btnId, inputId) {
+  $(btnId).addEventListener('click', () => {
+    const input = $(inputId);
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    $(btnId).textContent = showing ? 'Show' : 'Hide';
+    input.focus();
+  });
+}
+wireToggle('togglePass', 'password');
+wireToggle('toggleRegPass', 'regPass');
+
+/* =========================================================
+   LOGIN LOGIC
+   ========================================================= */
+const loginForm  = $('loginForm');
+const emailInput = $('email');
+const passInput  = $('password');
+
+loginForm.addEventListener('submit', e => {
+  e.preventDefault();
+
+  const emailVal = emailInput.value.trim();
+  const passVal  = passInput.value;
+  let ok = true;
+
+  /* --- field 1: email / phone --- */
+  if (!emailVal) {
+    setError(emailInput, $('emailErr'), 'Please enter your email or phone number.');
+    ok = false;
+  } else if (!isEmailOrPhone(emailVal)) {
+    setError(emailInput, $('emailErr'), 'Please enter a valid email or phone number.');
+    ok = false;
+  } else {
+    setError(emailInput, $('emailErr'), '');
+  }
+
+  /* --- field 2: password --- */
+  if (!passVal) {
+    setError(passInput, $('passwordErr'), 'Please enter your password.');
+    ok = false;
+  } else if (passVal.length < 6) {
+    setError(passInput, $('passwordErr'), 'Password must be at least 6 characters.');
+    ok = false;
+  } else {
+    setError(passInput, $('passwordErr'), '');
+  }
+
+  if (!ok) { (emailVal ? passInput : emailInput).focus(); return; }
+
+  /* --- check against stored accounts --- */
+  const accounts = loadAccounts();
+  const key = emailVal.toLowerCase();
+  const account = accounts[key];
+
+  if (!account) {
+    setError(emailInput, $('emailErr'),
+      "Couldn't find an account for that email or phone.");
+    emailInput.focus();
+    return;
+  }
+
+  if (account.password !== passVal) {
+    setError(passInput, $('passwordErr'),
+      "That's not the right password. Try again or click Forgot password to reset it.");
+    passInput.select();
+    return;
+  }
+
+  /* --- success --- */
+  const btn = $('signInBtn');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+
+    if ($('keep').checked) {
+      localStorage.setItem(REMEMBER_KEY, key);
+    } else {
+      localStorage.removeItem(REMEMBER_KEY);
+    }
+    sessionStorage.setItem(SESSION_KEY, key);
+
+    $('successTitle').textContent = `Welcome back, ${account.name || 'there'}!`;
+    $('successText').textContent  = `Signed in as ${key}. Your session is active in this browser.`;
+    showView('successView');
+  }, 700);
+});
+
+/* Live re-validation: clear error as soon as user types */
+emailInput.addEventListener('input', () => {
+  if (emailInput.classList.contains('invalid')) setError(emailInput, $('emailErr'), '');
+});
+passInput.addEventListener('input', () => {
+  if (passInput.classList.contains('invalid')) setError(passInput, $('passwordErr'), '');
+});
+
+/* =========================================================
+   REGISTER LOGIC
+   ========================================================= */
+$('registerForm').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const nameEl  = $('regName');
+  const emailEl = $('regEmail');
+  const passEl  = $('regPass');
+
+  const name  = nameEl.value.trim();
+  const email = emailEl.value.trim().toLowerCase();
+  const pass  = passEl.value;
+  let ok = true;
+
+  if (name.length < 2) {
+    setError(nameEl, $('regNameErr'), 'Please enter your full name.');
+    ok = false;
+  } else setError(nameEl, $('regNameErr'), '');
+
+  if (!EMAIL_RE.test(email)) {
+    setError(emailEl, $('regEmailErr'), 'Please enter a valid email address.');
+    ok = false;
+  } else if (loadAccounts()[email]) {
+    setError(emailEl, $('regEmailErr'), 'An account with this email already exists.');
+    ok = false;
+  } else setError(emailEl, $('regEmailErr'), '');
+
+  if (pass.length < 6) {
+    setError(passEl, $('regPassErr'), 'Password must be at least 6 characters.');
+    ok = false;
+  } else setError(passEl, $('regPassErr'), '');
+
+  if (!ok) return;
+
+  const accounts = loadAccounts();
+  accounts[email] = { name, password: pass };
+  saveAccounts(accounts);
+
+  sessionStorage.setItem(SESSION_KEY, email);
+  $('successTitle').textContent = `Welcome, ${name}!`;
+  $('successText').textContent  = `Your account (${email}) was created successfully.`;
+  showView('successView');
+});
+
+/* =========================================================
+   VIEW NAVIGATION
+   ========================================================= */
+$('joinLink').addEventListener('click', e => {
+  e.preventDefault();
+  $('registerForm').reset();
+  ['regNameErr','regEmailErr','regPassErr'].forEach(id => $(id).classList.remove('show'));
+  showView('registerView');
+});
+
+$('signInLink').addEventListener('click', e => {
+  e.preventDefault();
+  showView('loginView');
+});
+
+$('signOutLink').addEventListener('click', () => {
+  sessionStorage.removeItem(SESSION_KEY);
+  loginForm.reset();
+  setError(emailInput, $('emailErr'), '');
+  setError(passInput, $('passwordErr'), '');
+  showView('loginView');
+});
+
+$('forgotLink').addEventListener('click', e => {
+  e.preventDefault();
+  alert('Password reset is not part of this student project.');
+});
+
+$('appleBtn').addEventListener('click', () => {
+  alert('Apple sign-in is not part of this student project.');
+});
+
+/* =========================================================
+   RESTORE SESSION / REMEMBERED EMAIL ON LOAD
+   ========================================================= */
+(function restore() {
+  const remembered = localStorage.getItem(REMEMBER_KEY);
+  if (remembered) {
+    emailInput.value = remembered;
+    $('keep').checked = true;
+  }
+
+  const session = sessionStorage.getItem(SESSION_KEY);
+  if (session) {
+    const account = loadAccounts()[session];
+    if (account) {
+      $('successTitle').textContent = `Welcome back, ${account.name || 'there'}!`;
+      $('successText').textContent  = `Signed in as ${session}.`;
+      showView('successView');
+    }
+  }
+})();
+</script>
+</body>
+</html>
