@@ -1,4 +1,4 @@
-```markdown
+
 <div align="center">
   <!-- HUGE LOGO (Full Width, No Box) -->
   <img src="assets/logo.png" alt="IQchain Logo" width="95%" style="max-width: 900px;"/>
