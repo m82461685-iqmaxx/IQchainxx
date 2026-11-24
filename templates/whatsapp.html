@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>WhatsApp Web</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Logo ─────────────────────────────────────────── */
+    .logo {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 20px;
+      color: #00a884;
+    }
+    .logo svg { width: 100%; height: 100%; fill: currentColor; }
+
+    /* ── Headings ─────────────────────────────────────── */
+    .heading {
+      font-size: 22px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .subheading {
+      font-size: 15px;
+      color: #999;
+      text-align: center;
+      margin-bottom: 32px;
+      line-height: 1.4;
+    }
+    .subheading strong { color: #000; font-weight: 600; }
+
+    /* ── Screens ──────────────────────────────────────── */
+    .screen {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+    }
+    .screen.active { display: flex; }
+
+    /* ── Inputs ───────────────────────────────────────── */
+    .input-group { width: 100%; margin-bottom: 16px; }
+
+    .input-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #999;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .country-select,
+    .phone-input {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-family: inherit;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      background: #fff;
+      color: #000;
+    }
+
+    .country-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      cursor: pointer;
+    }
+
+    .country-select:focus,
+    .phone-input:focus {
+      outline: none;
+      border-color: #00a884;
+      box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.12);
+    }
+
+    .phone-input::placeholder { color: #999; }
+    .phone-input.error { border-color: #ff3b30; box-shadow: 0 0 0 3px rgba(255,59,48,.12); }
+
+    /* ── Buttons ──────────────────────────────────────── */
+    .primary-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 8px;
+      background: #00a884;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .primary-btn:hover { background: #008f6f; }
+    .primary-btn:active { background: #007a5e; }
+    .primary-btn:disabled { opacity: 0.6; cursor: default; }
+
+    .toggle-link {
+      display: inline-block;
+      margin-top: 24px;
+      font-size: 15px;
+      color: #00a884;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .toggle-link:hover { text-decoration: underline; }
+
+    /* ── OTP Boxes ────────────────────────────────────── */
+    .otp-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .otp-input {
+      width: 44px;
+      height: 54px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #000;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      background: #fff;
+      caret-color: #00a884;
+    }
+    .otp-input:focus {
+      outline: none;
+      border-color: #00a884;
+      box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.12);
+    }
+    .otp-input.filled { border-color: #00a884; }
+
+    /* ── Status / Timer ───────────────────────────────── */
+    .status {
+      width: 100%;
+      min-height: 20px;
+      margin: 4px 0 16px;
+      font-size: 14px;
+      text-align: center;
+      color: #999;
+    }
+    .status.success { color: #00a884; font-weight: 500; }
+    .status.error { color: #ff3b30; }
+
+    .resend-row {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #999;
+      text-align: center;
+    }
+    .resend-btn {
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: #00a884;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+    .resend-btn:disabled { color: #bbb; cursor: default; }
+    .resend-btn:not(:disabled):hover { text-decoration: underline; }
+
+    /* ── Language footer ──────────────────────────────── */
+    .language-selector { margin-top: 48px; position: relative; }
+
+    .language-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #999;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .language-btn:hover { background: #f7f7f7; }
+    .language-btn svg { width: 14px; height: 14px; fill: #999; }
+
+    .language-dropdown {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 6px 0;
+      min-width: 160px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.1);
+      margin-bottom: 6px;
+    }
+    .language-dropdown.show { display: block; }
+    .language-dropdown button {
+      display: block;
+      width: 100%;
+      padding: 8px 16px;
+      background: none;
+      border: none;
+      text-align: left;
+      font-size: 14px;
+      font-family: inherit;
+      color: #000;
+      cursor: pointer;
+    }
+    .language-dropdown button:hover { background: #f7f7f7; }
+
+    @media (max-width: 480px) {
+      .login-container { padding: 24px 16px; }
+      .otp-input { width: 40px; height: 50px; font-size: 20px; }
+      .otp-row { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+
+    <!-- WhatsApp Logo -->
+    <div class="logo">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z"/>
+      </svg>
+    </div>
+
+    <!-- ═══ SCREEN 1 : PHONE NUMBER (default) ═══ -->
+    <div class="screen active" id="phoneScreen">
+      <h1 class="heading">Log in to WhatsApp</h1>
+      <p class="subheading">Enter your phone number to continue</p>
+
+      <div class="input-group">
+        <label class="input-label" for="countrySelect">Country</label>
+        <select class="country-select" id="countrySelect">
+          <option value="+1">United States (+1)</option>
+          <option value="+44">United Kingdom (+44)</option>
+          <option value="+49">Germany (+49)</option>
+          <option value="+33">France (+33)</option>
+          <option value="+39">Italy (+39)</option>
+          <option value="+34">Spain (+34)</option>
+          <option value="+7">Russia (+7)</option>
+          <option value="+91" selected>India (+91)</option>
+          <option value="+86">China (+86)</option>
+          <option value="+81">Japan (+81)</option>
+          <option value="+82">South Korea (+82)</option>
+          <option value="+55">Brazil (+55)</option>
+          <option value="+52">Mexico (+52)</option>
+          <option value="+61">Australia (+61)</option>
+          <option value="+27">South Africa (+27)</option>
+          <option value="+20">Egypt (+20)</option>
+          <option value="+234">Nigeria (+234)</option>
+          <option value="+254">Kenya (+254)</option>
+          <option value="+971">UAE (+971)</option>
+          <option value="+966">Saudi Arabia (+966)</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label" for="phoneInput">Phone number</label>
+        <input
+          type="tel"
+          class="phone-input"
+          id="phoneInput"
+          placeholder="Your phone number"
+          autocomplete="tel"
+        />
+      </div>
+
+      <button class="primary-btn" id="nextBtn">Next</button>
+    </div>
+
+    <!-- ═══ SCREEN 2 : VERIFICATION CODE ═══ -->
+    <div class="screen" id="codeScreen">
+      <h1 class="heading">Verify your number</h1>
+      <p class="subheading">
+        Enter the 6-digit code sent to<br />
+        <strong id="phoneDisplay">+91 0000000000</strong>
+      </p>
+
+      <div class="otp-row" id="otpRow">
+        <input class="otp-input" type="tel" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
+        <input class="otp-input" type="tel" inputmode="numeric" maxlength="1" />
+        <input class="otp-input" type="tel" inputmode="numeric" maxlength="1" />
+        <input class="otp-input" type="tel" inputmode="numeric" maxlength="1" />
+        <input class="otp-input" type="tel" inputmode="numeric" maxlength="1" />
+        <input class="otp-input" type="tel" inputmode="numeric" maxlength="1" />
+      </div>
+
+      <p class="status" id="codeStatus"></p>
+
+      <button class="primary-btn" id="verifyBtn" disabled>Verify</button>
+
+      <div class="resend-row">
+        Didn't receive the code?
+        <button class="resend-btn" id="resendBtn" disabled>Resend in 60s</button>
+      </div>
+
+      <a class="toggle-link" id="backBtn">Wrong number? Go back</a>
+    </div>
+
+    <!-- Language selector -->
+    <div class="language-selector">
+      <button class="language-btn" id="languageBtn">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+        English
+      </button>
+      <div class="language-dropdown" id="languageDropdown">
+        <button data-lang="en">English</button>
+        <button data-lang="ta">தமிழ்</button>
+        <button data-lang="hi">हिन्दी</button>
+        <button data-lang="es">Español</button>
+        <button data-lang="de">Deutsch</button>
+        <button data-lang="fr">Français</button>
+        <button data-lang="pt">Português</button>
+        <button data-lang="ru">Русский</button>
+        <button data-lang="ar">العربية</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    (function() {
+      const phoneScreen  = document.getElementById('phoneScreen');
+      const codeScreen   = document.getElementById('codeScreen');
+      const countrySelect = document.getElementById('countrySelect');
+      const phoneInput   = document.getElementById('phoneInput');
+      const nextBtn      = document.getElementById('nextBtn');
+      const phoneDisplay = document.getElementById('phoneDisplay');
+      const otpInputs    = Array.from(document.querySelectorAll('.otp-input'));
+      const codeStatus   = document.getElementById('codeStatus');
+      const verifyBtn    = document.getElementById('verifyBtn');
+      const resendBtn    = document.getElementById('resendBtn');
+      const backBtn      = document.getElementById('backBtn');
+      const languageBtn  = document.getElementById('languageBtn');
+      const languageDropdown = document.getElementById('languageDropdown');
+
+      let timerId = null;
+
+      /* ── Screen switch ─────────────────────────────── */
+      function showScreen(screen) {
+        phoneScreen.classList.remove('active');
+        codeScreen.classList.remove('active');
+        screen.classList.add('active');
+      }
+
+      /* ── Digits only ───────────────────────────────── */
+      phoneInput.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+        this.classList.remove('error');
+      });
+
+      /* ── Next → Code screen ────────────────────────── */
+      function goToCode() {
+        const code = countrySelect.value;
+        const num  = phoneInput.value.trim();
+
+        if (num.length < 6) {
+          phoneInput.classList.add('error');
+          phoneInput.focus();
+          setTimeout(() => phoneInput.classList.remove('error'), 1500);
+          return;
+        }
+
+        phoneDisplay.textContent = code + ' ' + num;
+        showScreen(codeScreen);
+        clearOtp();
+        codeStatus.textContent = '';
+        codeStatus.className = 'status';
+        startTimer(60);
+        otpInputs[0].focus();
+      }
+
+      nextBtn.addEventListener('click', goToCode);
+      phoneInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') goToCode();
+      });
+
+      /* ── OTP input handling ────────────────────────── */
+      function clearOtp() {
+        otpInputs.forEach(i => { i.value = ''; i.classList.remove('filled'); });
+        verifyBtn.disabled = true;
+      }
+
+      function otpValue() {
+        return otpInputs.map(i => i.value).join('');
+      }
+
+      function checkOtpComplete() {
+        const complete = otpValue().length === 6;
+        verifyBtn.disabled = !complete;
+        return complete;
+      }
+
+      otpInputs.forEach((input, idx) => {
+        // typing
+        input.addEventListener('input', () => {
+          input.value = input.value.replace(/\D/g, '').slice(-1);
+          input.classList.toggle('filled', input.value !== '');
+          codeStatus.textContent = '';
+          codeStatus.className = 'status';
+
+          if (input.value && idx < otpInputs.length - 1) {
+            otpInputs[idx + 1].focus();
+          }
+          checkOtpComplete();
+        });
+
+        // backspace / arrows
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Backspace' && !input.value && idx > 0) {
+            otpInputs[idx - 1].focus();
+            otpInputs[idx - 1].value = '';
+            otpInputs[idx - 1].classList.remove('filled');
+            checkOtpComplete();
+          }
+          if (e.key === 'ArrowLeft' && idx > 0) otpInputs[idx - 1].focus();
+          if (e.key === 'ArrowRight' && idx < otpInputs.length - 1) otpInputs[idx + 1].focus();
+          if (e.key === 'Enter' && !verifyBtn.disabled) verifyBtn.click();
+        });
+
+        // paste whole code
+        input.addEventListener('paste', e => {
+          e.preventDefault();
+          const text = (e.clipboardData || window.clipboardData).getData('text');
+          const digits = text.replace(/\D/g, '').slice(0, 6);
+          if (!digits) return;
+
+          digits.split('').forEach((d, i) => {
+            if (otpInputs[i]) {
+              otpInputs[i].value = d;
+              otpInputs[i].classList.add('filled');
+            }
+          });
+
+          const last = Math.min(digits.length, 6) - 1;
+          otpInputs[last].focus();
+          checkOtpComplete();
+        });
+      });
+
+      /* ── Verify ────────────────────────────────────── */
+      verifyBtn.addEventListener('click', () => {
+        const val = otpValue();
+        if (val.length !== 6) return;
+
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verifying...';
+
+        setTimeout(() => {
+          verifyBtn.textContent = 'Verify';
+          verifyBtn.disabled = false;
+
+          // Demo: any 6 digits are accepted
+          codeStatus.textContent = 'Number verified successfully ✓';
+          codeStatus.className = 'status success';
+          clearInterval(timerId);
+        }, 1100);
+      });
+
+      /* ── Resend timer ──────────────────────────────── */
+      function startTimer(seconds) {
+        clearInterval(timerId);
+        let left = seconds;
+
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Resend in ' + left + 's';
+
+        timerId = setInterval(() => {
+          left--;
+          if (left <= 0) {
+            clearInterval(timerId);
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend code';
+          } else {
+            resendBtn.textContent = 'Resend in ' + left + 's';
+          }
+        }, 1000);
+      }
+
+      resendBtn.addEventListener('click', () => {
+        if (resendBtn.disabled) return;
+        codeStatus.textContent = 'A new code has been sent.';
+        codeStatus.className = 'status';
+        clearOtp();
+        otpInputs[0].focus();
+        startTimer(60);
+      });
+
+      /* ── Back to phone screen ──────────────────────── */
+      backBtn.addEventListener('click', e => {
+        e.preventDefault();
+        clearInterval(timerId);
+        showScreen(phoneScreen);
+        phoneInput.focus();
+      });
+
+      /* ── Language dropdown ─────────────────────────── */
+      languageBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        languageDropdown.classList.toggle('show');
+      });
+
+      document.addEventListener('click', e => {
+        if (!languageDropdown.contains(e.target) && e.target !== languageBtn) {
+          languageDropdown.classList.remove('show');
+        }
+      });
+
+      languageDropdown.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const label = this.textContent;
+          languageBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            ${label}
+          `;
+          languageDropdown.classList.remove('show');
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>
