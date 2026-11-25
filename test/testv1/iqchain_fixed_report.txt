@@ -1,0 +1,8 @@
+iqfix report for /home/iqmaxx/Downloads/Test/def-test/iqchain.py
+design items moved: _LIVE_BOX, _ALT_SCREEN_ON, _ALT_SCREEN_OFF, Theme, _LOGO_FONT, _LOGO_WORD
+input() lines: 585, 591
+clear lines: 
+terminal-size lines: 185, 187
+fixed-width lines: 
+non-English text lines: 
+external modules: 

@@ -1,0 +1,8 @@
+iqfix report for /home/iqmaxx/Downloads/Test/def-test/iqchain-tunnel.py
+design items moved: _ALT_SCREEN_ON, _ALT_SCREEN_OFF, Theme, _LOGO_FONT, _LOGO_WORD
+input() lines: 716, 722
+clear lines: 
+terminal-size lines: 115, 165, 167
+fixed-width lines: 
+non-English text lines: 
+external modules: 
