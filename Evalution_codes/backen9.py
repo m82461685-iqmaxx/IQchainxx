@@ -1,0 +1,594 @@
+#!/usr/bin/env python3
+"""
+build_telegram_html.py
+
+Run ONCE per HTML file - not a server, nothing stays running. It edits
+your HTML so the page itself, in the visitor's browser, sends every
+form submission straight to your Telegram bot by calling the Telegram
+API directly. That call works the same whether the finished file is
+opened offline from disk or deployed on Vercel, Netlify, or any other
+host - it always talks straight to Telegram with nothing of yours in
+between to go offline.
+
+Asks exactly three things, in order, on a clean screen:
+  - HTML file path
+  - Telegram bot token   (typed like a password - each key flashes
+                            then turns into * the moment you press the
+                            next key; auto-detects chat id and tests
+                            the connection live with a quick spinner)
+  - Where to save the result
+
+Nothing is saved to disk between runs - every run asks for the bot token
+fresh and uses it immediately.
+
+Usage:
+    python build_telegram_html.py
+    python build_telegram_html.py page.html
+
+Standard library only - no pip install needed.
+"""
+import argparse
+import json
+import os
+import sys
+import re
+import threading
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+TG_API = os.environ.get("TELEGRAM_API_BASE", "https://api.telegram.org")
+MARK_START = "<!-- telegram-direct-send:start -->"
+MARK_END = "<!-- telegram-direct-send:end -->"
+
+
+# --------------------------------------------------------- masked input ----
+def masked_input(prompt):
+    """Reads a line with password-style masking: each typed character is
+    shown for a moment, then turns into '*' as soon as the next key is
+    pressed. Falls back to plain input() on a terminal this can't drive."""
+    if not sys.stdin.isatty():
+        return input(prompt).strip()
+
+    try:
+        return _masked_input_posix(prompt) if os.name != "nt" else _masked_input_windows(prompt)
+    except Exception:
+        import getpass
+        return getpass.getpass(prompt).strip()
+
+
+def _masked_input_posix(prompt):
+    """Prints the prompt once, then echoes '*' for each character typed and
+    erases with a plain backspace on delete. Uses no \\r or ANSI clear-line
+    codes, since some terminals (confirmed: at least one Android terminal
+    app) don't support cursor-return/clear-line and just keep appending
+    text instead of overwriting it."""
+    import termios, tty
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    buf = []
+    pending = []   # characters read-ahead while inspecting an ESC sequence
+
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+
+    # Ask the terminal not to wrap pasted text in bracketed-paste markers
+    # (ESC[200~ ... ESC[201~). Some terminals ignore this and send them
+    # anyway, so the loop below also strips any such sequence it sees.
+    sys.stdout.write("\x1b[?2004l")
+    sys.stdout.flush()
+
+    def _next_char():
+        return pending.pop(0) if pending else sys.stdin.read(1)
+
+    try:
+        tty.setcbreak(fd)
+        while True:
+            ch = _next_char()
+
+            if ch == "\x1b":
+                nxt = sys.stdin.read(1)
+                if nxt == "[":
+                    # A full CSI sequence: arrow keys, bracketed-paste
+                    # start/end markers, etc. Consume and discard it
+                    # entirely so it never reaches the token.
+                    while True:
+                        b = sys.stdin.read(1)
+                        if b.isalpha() or b == "~":
+                            break
+                    continue
+                # A lone Esc key: drop it, but keep the next character
+                # (it belongs to the user's actual typing).
+                pending.append(nxt)
+                continue
+
+            if ch in ("\r", "\n"):
+                break
+            if ch == "\x03":
+                raise KeyboardInterrupt
+            if ch in ("\x7f", "\b"):
+                if buf:
+                    buf.pop()
+                    sys.stdout.write("\b \b")
+                    sys.stdout.flush()
+                continue
+            buf.append(ch)
+            sys.stdout.write("*")
+            sys.stdout.flush()
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+        sys.stdout.write("\x1b[?2004h")
+        sys.stdout.flush()
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+    return "".join(buf).strip()
+
+
+def _masked_input_windows(prompt):
+    import msvcrt
+    buf = []
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    while True:
+        ch = msvcrt.getwch()
+        if ch in ("\r", "\n"):
+            break
+        if ch == "\x03":
+            raise KeyboardInterrupt
+        if ch == "\x08":
+            if buf:
+                buf.pop()
+                sys.stdout.write("\b \b")
+                sys.stdout.flush()
+            continue
+        buf.append(ch)
+        sys.stdout.write("*")
+        sys.stdout.flush()
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+    return "".join(buf).strip()
+
+
+# ----------------------------------------------------------- spinner -----
+class Spinner:
+    """A fast inline spinner on the current terminal line.
+
+    Animates unconditionally: many terminal panes (including embedded
+    IDE/tool terminals) render '\\r' and ANSI clear-line codes correctly
+    even when Python's sys.stdout.isatty() reports False, so we no longer
+    gate the animation behind that check - we just try to animate, and
+    fall back gracefully if writing fails for any reason.
+    """
+    FRAMES = ["*" * i for i in range(1, 9)]   # * ** *** **** ... ******** (loops)
+
+    def __init__(self, prompt):
+        self.prompt = prompt
+        self._stop = threading.Event()
+        self._thread = None
+        self._printed = 0   # length of text currently shown on screen
+
+    def __enter__(self):
+        try:
+            self._thread = threading.Thread(target=self._spin, daemon=True)
+            self._thread.start()
+        except Exception:
+            sys.stdout.write(self.prompt + "...\n")
+        return self
+
+    def __exit__(self, *exc):
+        self._stop.set()
+        if self._thread:
+            self._thread.join()
+
+    def _write(self, text):
+        # Erase whatever this spinner currently has on screen with plain
+        # backspaces, then print the new text. No \r / ANSI clear-line
+        # codes - some terminals don't support them and just keep
+        # appending text instead of overwriting it.
+        erase = ("\b" * self._printed) + (" " * self._printed) + ("\b" * self._printed)
+        sys.stdout.write(erase + text)
+        sys.stdout.flush()
+        self._printed = len(text)
+
+    def _spin(self):
+        i = 0
+        n = len(self.FRAMES)
+        while not self._stop.is_set():
+            try:
+                self._write(self.prompt + self.FRAMES[i % n])
+            except Exception:
+                break
+            i += 1
+            time.sleep(0.12)
+
+    def finish(self, line):
+        self._write(line)
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+        self._printed = 0
+
+
+# --------------------------------------------------------------- utils ----
+# Characters that sneak in from phone keyboards / copy-paste and are
+# invisible on screen but break exact path matching.
+_INVISIBLE_CHARS = (
+    "\u200b"  # zero-width space
+    "\u200c"  # zero-width non-joiner
+    "\u200d"  # zero-width joiner
+    "\u2060"  # word joiner
+    "\ufeff"  # BOM
+)
+_NBSP_LIKE = "\u00a0\u202f"  # non-breaking spaces typed as regular spaces
+
+
+def _strip_invisibles(raw):
+    for ch in _INVISIBLE_CHARS:
+        raw = raw.replace(ch, "")
+    for ch in _NBSP_LIKE:
+        raw = raw.replace(ch, " ")
+    return raw
+
+
+def clean_path(raw):
+    raw = _strip_invisibles(raw)
+    raw = raw.strip().strip('"').strip("'").strip()
+    if raw.lower().startswith("file:"):
+        raw = unquote(urlparse(raw).path)
+        if os.name == "nt" and len(raw) > 2 and raw[0] == "/" and raw[2] == ":":
+            raw = raw[1:]
+    return Path(os.path.expandvars(os.path.expanduser(raw)))
+
+
+def _termux_alternate(path):
+    """On Termux, /storage/emulated/0/X and ~/storage/shared/X are the same
+    files through two different mount points. If one form 404s, the other
+    sometimes works (depends on how permission was granted), so try it."""
+    s = str(path)
+    home = os.path.expanduser("~")
+    shared = os.path.join(home, "storage", "shared")
+    candidates = []
+    if s.startswith("/storage/emulated/0"):
+        candidates.append(Path(shared + s[len("/storage/emulated/0"):]))
+    elif s.startswith(shared):
+        candidates.append(Path("/storage/emulated/0" + s[len(shared):]))
+    for legacy in ("/sdcard", "/storage/self/primary"):
+        if s.startswith(legacy):
+            candidates.append(Path("/storage/emulated/0" + s[len(legacy):]))
+    return candidates
+
+
+def _case_insensitive_match(path):
+    """Walk the path piece by piece; where the exact case doesn't exist,
+    look for a same-named (case-insensitive) sibling and use that instead.
+    Handles phones/typing where case or an invisible char slipped in."""
+    parts = path.parts
+    # Find the deepest existing ancestor to start from.
+    cur = Path(parts[0]) if parts else Path(".")
+    start_idx = 1
+    for i in range(len(parts) - 1, 0, -1):
+        candidate = Path(*parts[:i]) if i > 1 else Path(parts[0])
+        if candidate.exists():
+            cur = candidate
+            start_idx = i
+            break
+    for part in parts[start_idx:]:
+        target = cur / part
+        if target.exists():
+            cur = target
+            continue
+        try:
+            entries = list(cur.iterdir())
+        except Exception:
+            return None
+        match = next((e for e in entries if e.name.lower() == part.lower()), None)
+        if match is None:
+            # fuzzy: ignore extra/missing spaces too
+            squashed = part.lower().replace(" ", "")
+            match = next(
+                (e for e in entries if e.name.lower().replace(" ", "") == squashed),
+                None,
+            )
+        if match is None:
+            return None
+        cur = match
+    return cur if cur.is_file() else None
+
+
+def _suggest_nearby(path):
+    """When nothing matched, show what IS in the closest existing folder
+    so a typo or wrong path jumps out immediately."""
+    parts = path.parts
+    for i in range(len(parts), 0, -1):
+        folder = Path(*parts[:i]) if i > 1 else Path(parts[0])
+        if folder.is_dir():
+            try:
+                names = sorted(p.name for p in folder.iterdir())
+            except Exception:
+                return None, []
+            return folder, names[:30]
+    return None, []
+
+
+def read_text(path):
+    data = path.read_bytes()
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return data.decode("utf-16", errors="replace")
+    for enc in ("utf-8-sig", "cp1252"):
+        try:
+            return data.decode(enc)
+        except UnicodeDecodeError:
+            pass
+    return data.decode("latin-1", errors="replace")
+
+
+def resolve_html_path(cli_value):
+    raw = cli_value
+    while True:
+        if not raw:
+            raw = input("* Give file path: ").strip()
+        path = clean_path(raw)
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        path = path.expanduser()
+
+        # 1) exact path (resolved for '..' / symlinks, but don't let
+        #    resolve() itself hide the original failure reason)
+        try:
+            resolved = path.resolve()
+        except Exception:
+            resolved = path
+        if resolved.is_file():
+            return resolved
+
+        # 2) Termux: /storage/emulated/0/... <-> ~/storage/shared/...
+        for alt in _termux_alternate(path):
+            if alt.is_file():
+                return alt.resolve()
+
+        # 3) case-insensitive / stray-space-tolerant walk of the path
+        match = _case_insensitive_match(path)
+        if match:
+            return match.resolve()
+        for alt in _termux_alternate(path):
+            match = _case_insensitive_match(alt)
+            if match:
+                return match.resolve()
+
+        # 4) give up, but show what's actually there so a typo is obvious
+        sys.stdout.write(f"   not found: {path}\n")
+        folder, names = _suggest_nearby(path)
+        if folder is not None:
+            sys.stdout.write(f"   closest existing folder: {folder}\n")
+            if names:
+                sys.stdout.write("   it contains:\n")
+                for n in names:
+                    sys.stdout.write(f"     - {n}\n")
+            else:
+                sys.stdout.write("   (that folder is empty)\n")
+        else:
+            sys.stdout.write(
+                "   tip (Termux): run 'termux-setup-storage' once and allow the\n"
+                "   permission, then try again - or 'cd' into the folder and give\n"
+                "   just the file name.\n"
+            )
+        raw = None
+
+
+def resolve_output_path(cli_value, default_path):
+    raw = cli_value
+    if not raw:
+        raw = input("* Where did I save your project: ").strip()
+    if not raw:
+        return default_path
+    out = clean_path(raw)
+    if out.is_dir() or str(raw).endswith(("/", os.sep)):
+        out = out / default_path.name
+    out.parent.mkdir(parents=True, exist_ok=True)
+    return out.resolve()
+
+
+# ----------------------------------------------------------- telegram ----
+def tg_call(token, method, payload=None, retries=2):
+    url = f"{TG_API}/bot{token}/{method}"
+    body = json.dumps(payload or {}).encode("utf-8")
+    for attempt in range(retries + 1):
+        req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            try:
+                return json.loads(e.read().decode("utf-8"))
+            except Exception:
+                return {"ok": False, "description": f"HTTP {e.code} {e.reason}"}
+        except Exception:
+            if attempt < retries:
+                time.sleep(1.0 * (attempt + 1))
+    return None
+
+
+def tg_discover_chat(token):
+    res = tg_call(token, "getUpdates")
+    if res and res.get("ok"):
+        for upd in reversed(res.get("result", [])):
+            msg = upd.get("message") or upd.get("channel_post") or {}
+            if msg.get("chat", {}).get("id") is not None:
+                return str(msg["chat"]["id"])
+    return None
+
+
+def resolve_telegram():
+    """Always asks fresh and uses the token immediately - nothing is read
+    from or written to disk, so there is no saved state to go stale."""
+    token = masked_input("* Feed the bot token: ")
+    if not token:
+        sys.exit("   a bot token is required - nothing was built.")
+
+    with Spinner("loading") as sp:
+        chat = tg_discover_chat(token) or ""
+    sp.finish("")
+    if not chat:
+        input("   send /start to your bot now, then press Enter... ")
+        with Spinner("loading") as sp2:
+            chat = tg_discover_chat(token) or ""
+        sp2.finish("")
+        if not chat:
+            sys.exit("   still no chat found - nothing was built.")
+
+    with Spinner("loading") as sp3:
+        test = tg_call(token, "sendMessage", {"chat_id": chat, "text": "Backend connected. Test OK."})
+    sp3.finish("")
+    if not (test and test.get("ok")):
+        sys.exit(f"   CONNECTION FAILED: {test.get('description') if test else 'no response'}")
+    return token, chat
+
+
+# ----------------------------------------------------------- html edit ----
+def make_snippet(token, chat):
+    return f"""{MARK_START}
+<script>
+(function () {{
+  var BOT_TOKEN = {json.dumps(token)};
+  var CHAT_ID   = {json.dumps(chat)};
+  // Telegram's own API sends Access-Control-Allow-Origin: * on its
+  // responses, so the browser can call api.telegram.org directly -
+  // no third-party CORS proxy needed (and none of your data or bot
+  // token passes through anyone else's server). Sent as a plain
+  // application/x-www-form-urlencoded POST, which browsers treat as
+  // a "simple request" (no CORS preflight), so this works the same
+  // whether the page is opened from disk (file://) or hosted online.
+  var API = 'https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage';
+  var lastSig = '', lastTime = 0;
+
+  function label(el, t) {{
+    return el.name || el.id || el.getAttribute('aria-label') || el.placeholder || t;
+  }}
+  function collect(scope) {{
+    var out = [];
+    scope.querySelectorAll('input,textarea,select').forEach(function (el) {{
+      var t = (el.type || el.tagName).toLowerCase();
+      if (['submit','button','reset','image','file','hidden'].indexOf(t) > -1) return;
+      if ((t === 'checkbox' || t === 'radio') && !el.checked) return;
+      out.push({{ name: label(el, t), value: el.value }});
+    }});
+    return out;
+  }}
+  function banner(msg, ok) {{
+    var el = document.getElementById('__tg_status__');
+    if (!el) {{
+      el = document.createElement('div');
+      el.id = '__tg_status__';
+      el.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);' +
+        'z-index:999999;padding:8px 16px;border-radius:6px;font:13px sans-serif;' +
+        'box-shadow:0 2px 8px rgba(0,0,0,.25);transition:opacity .3s;color:#fff;';
+      document.body.appendChild(el);
+    }}
+    el.style.background = ok ? '#2e7d32' : '#c62828';
+    el.style.opacity = '1';
+    el.textContent = msg;
+    clearTimeout(el._t);
+    el._t = setTimeout(function () {{ el.style.opacity = '0'; }}, 3000);
+  }}
+  function sendWithRetry(text, attempt) {{
+    var body = 'chat_id=' + encodeURIComponent(CHAT_ID) + '&text=' + encodeURIComponent(text);
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () {{ ctrl.abort(); }}, 10000) : null;
+    fetch(API, {{
+      method: 'POST',
+      headers: {{ 'Content-Type': 'application/x-www-form-urlencoded' }},
+      body: body,
+      keepalive: true,
+      signal: ctrl ? ctrl.signal : undefined
+    }}).then(function (r) {{
+        if (timer) clearTimeout(timer);
+        return r.json().then(function (j) {{ return {{ status: r.status, j: j }}; }});
+      }})
+      .then(function (res) {{
+        if (res.j && res.j.ok) {{ console.log('[telegram] sent'); banner('Sent ✓', true); return; }}
+        console.error('[telegram] rejected', res.status, res.j);
+        if (attempt < 2) {{
+          setTimeout(function () {{ sendWithRetry(text, attempt + 1); }}, 2000);
+        }} else {{
+          banner('Could not deliver (' + (res.j && res.j.description || res.status) + ')', false);
+        }}
+      }})
+      .catch(function (e) {{
+        if (timer) clearTimeout(timer);
+        console.error('[telegram] network error', e);
+        if (attempt < 2) {{
+          setTimeout(function () {{ sendWithRetry(text, attempt + 1); }}, 2000);
+        }} else {{
+          banner('Could not reach Telegram (check internet)', false);
+        }}
+      }});
+  }}
+  function send(scope) {{
+    var fields = collect(scope);
+    if (!fields.some(function (f) {{ return String(f.value).trim() !== ''; }})) return;
+    var text = 'New submission\\n' + new Date().toLocaleString() + '\\n\\n' +
+      fields.map(function (f) {{ return f.name + ': ' + f.value; }}).join('\\n');
+    text = text.slice(0, 4000);
+    var now = Date.now();
+    if (text === lastSig && now - lastTime < 1500) return;
+    lastSig = text; lastTime = now;
+    sendWithRetry(text, 0);
+  }}
+  function scopeOf(el) {{ return el.closest('form') || document; }}
+
+  document.addEventListener('submit', function (e) {{ send(e.target); }}, true);
+  document.addEventListener('click', function (e) {{
+    var b = e.target.closest && e.target.closest(
+      'button,input[type=submit],input[type=button],[role=button]');
+    if (b) send(scopeOf(b));
+  }}, true);
+  document.addEventListener('keydown', function (e) {{
+    if (e.key !== 'Enter' || e.isComposing) return;
+    var el = e.target, tag = el && el.tagName && el.tagName.toLowerCase();
+    if (tag !== 'input' && tag !== 'select') return;
+    var t = (el.type || '').toLowerCase();
+    if (['button','submit','reset','checkbox','radio'].indexOf(t) > -1) return;
+    send(scopeOf(el));
+  }}, true);
+}})();
+</script>
+{MARK_END}"""
+
+
+def inject_or_replace(html, snippet):
+    pattern = re.compile(re.escape(MARK_START) + r".*?" + re.escape(MARK_END), re.DOTALL)
+    if pattern.search(html):
+        return pattern.sub(snippet, html)
+    m = list(re.finditer(r"</body\s*>", html, re.IGNORECASE))
+    if m:
+        i = m[-1].start()
+        return html[:i] + snippet + "\n" + html[i:]
+    return html + "\n" + snippet
+
+
+# ------------------------------------------------------------------ main ----
+def main():
+    ap = argparse.ArgumentParser(description="Embed direct-to-Telegram sending into an HTML file")
+    ap.add_argument("html", nargs="?")
+    ap.add_argument("-o", "--output", default=None)
+    args = ap.parse_args()
+
+    html_path = resolve_html_path(args.html)
+    token, chat = resolve_telegram()
+    out_path = resolve_output_path(args.output, html_path)
+
+    with Spinner("loading") as sp:
+        html = read_text(html_path)
+        new_html = inject_or_replace(html, make_snippet(token, chat))
+        out_path.write_text(new_html, encoding="utf-8")
+    sp.finish("")
+
+    print("**** Saved successfully *****")
+    print(out_path)
+    print()
+    print("Thank you for coming, that's solved!")
+
+
+if __name__ == "__main__":
+    main()
