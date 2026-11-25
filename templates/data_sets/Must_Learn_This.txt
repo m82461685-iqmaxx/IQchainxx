@@ -1,0 +1,660 @@
+I’ll structure this as a professional, English-only command reference covering Linux, Termux, PowerShell, and Bash, progressing from absolute beginner to advanced system administration and automation.
+
+One important distinction: Linux commands and Bash commands overlap, but they are not identical. Termux is an Android terminal environment, while PowerShell has its own command system. The guide will explain each separately.
+
+### MASTER COMMAND LINE HANDBOOK
+
+BEGINNER → INTERMEDIATE → ADVANCED → PROFESSIONAL
+
+![Best Mini PC for Kali Linux 2026](https://images.openai.com/static-rsc-4/cbek5K1UwbdqoVTBjb_W2n641WAC0Q4H5aXdrX2EIDUExzQJP_zlQtBRNDV2aQnz_7K50z_T4qUp77x2ORf-49GGLQ9sDKF4_8TQWIpn_masQAPQ98JXIWV4iT-ov24KBrX88qbRUvevQbtTr0s6xKYifNcH8nTriGL2aPHV2znCMYLXdzW-0I42eovQo1s2?purpose=fullsize)
+
+### 01
+
+LINUX
+
+System commands, files, networking, processes and administration.
+
+### 02
+
+TERMUX
+
+Android terminal, packages, storage, SSH and scripting.
+
+### 03
+
+POWERSHELL
+
+Windows administration, automation, objects and networking.
+
+### 04
+
+BASH
+
+Shell scripting, pipelines, functions and automation.
+
+### Complete learning structure
+
+| Module | Topics                                         |
+| ------ | ---------------------------------------------- |
+| 01     | Linux Fundamentals                             |
+| 02     | Linux File & Directory Management              |
+| 03     | Linux Users, Groups & Permissions              |
+| 04     | Linux Package Management                       |
+| 05     | Linux Process & System Administration          |
+| 06     | Linux Networking & Troubleshooting             |
+| 07     | Linux Storage & Disk Management                |
+| 08     | Linux Security & Advanced Administration       |
+| 09     | Termux Fundamentals                            |
+| 10     | Termux Package & Storage Management            |
+| 11     | Termux Networking, SSH & Utilities             |
+| 12     | Termux Scripting & Automation                  |
+| 13     | PowerShell Fundamentals                        |
+| 14     | PowerShell Files, Processes & Services         |
+| 15     | PowerShell System Administration               |
+| 16     | PowerShell Networking & Security               |
+| 17     | PowerShell Advanced Scripting                  |
+| 18     | Bash Fundamentals                              |
+| 19     | Bash Variables, Conditions & Loops             |
+| 20     | Bash Functions & Advanced Scripting            |
+| 21     | Shell Pipelines, Redirection & Text Processing |
+| 22     | Professional CLI Workflows                     |
+
+### 01\. LINUX COMMANDS
+
+### Level 1 — Basic Commands
+
+| Command  | Description                   |
+| -------- | ----------------------------- |
+| pwd      | Print current directory       |
+| ls       | List directory contents       |
+| ls -la   | List all files with details   |
+| cd       | Change directory              |
+| cd ..    | Move to parent directory      |
+| cd ~     | Go to home directory          |
+| clear    | Clear terminal                |
+| whoami   | Display current user          |
+| hostname | Display system hostname       |
+| date     | Display current date and time |
+| cal      | Display calendar              |
+| uname -a | Display system information    |
+| history  | Show command history          |
+| man      | Open command manual           |
+| help     | Display shell help            |
+| echo     | Print text                    |
+| exit     | Exit terminal                 |
+
+### Level 2 — File Management
+
+| Command                | Description                  |
+| ---------------------- | ---------------------------- |
+| touch file.txt         | Create an empty file         |
+| mkdir folder           | Create directory             |
+| mkdir -p a/b/c         | Create nested directories    |
+| cp file.txt backup.txt | Copy a file                  |
+| cp -r folder backup    | Copy directory recursively   |
+| mv old.txt new.txt     | Move or rename file          |
+| rm file.txt            | Delete file                  |
+| rm -r folder           | Delete directory recursively |
+| rmdir folder           | Remove empty directory       |
+| cat file.txt           | Display file content         |
+| less file.txt          | Read file page by page       |
+| head file.txt          | Display first lines          |
+| tail file.txt          | Display last lines           |
+| tail -f log.txt        | Follow live log              |
+| file filename          | Identify file type           |
+| stat filename          | Display file metadata        |
+
+### Level 3 — Permissions & Users
+
+| Command            | Description                      |
+| ------------------ | -------------------------------- |
+| id                 | Display user and group IDs       |
+| groups             | Display user groups              |
+| sudo command       | Execute with elevated privileges |
+| su username        | Switch user                      |
+| chmod 755 file     | Change permissions               |
+| chmod +x script.sh | Make executable                  |
+| chown user file    | Change file owner                |
+| chgrp group file   | Change group ownership           |
+| umask              | Display default permission mask  |
+| passwd             | Change password                  |
+| useradd username   | Create user                      |
+| usermod            | Modify user account              |
+| userdel username   | Delete user                      |
+| groupadd group     | Create group                     |
+
+### Level 4 — Package Management
+
+Debian / Ubuntu / Kali Linux
+
+```bash
+sudo apt update
+sudo apt upgrade
+sudo apt install package
+sudo apt remove package
+sudo apt purge package
+sudo apt autoremove
+sudo apt search keyword
+sudo apt show package
+sudo apt list --installed
+```
+
+Fedora
+
+```bash
+sudo dnf check-update
+sudo dnf upgrade
+sudo dnf install package
+sudo dnf remove package
+sudo dnf search keyword
+```
+
+Arch Linux
+
+```bash
+sudo pacman -Syu
+sudo pacman -S package
+sudo pacman -R package
+sudo pacman -Ss keyword
+sudo pacman -Q
+```
+
+### Level 5 — Process Management
+
+| Command       | Description                  |
+| ------------- | ---------------------------- |
+| ps aux        | List running processes       |
+| top           | Monitor system processes     |
+| htop          | Interactive process monitor  |
+| pgrep process | Find process ID              |
+| kill PID      | Send termination signal      |
+| kill -9 PID   | Forcefully terminate process |
+| pkill name    | Terminate matching processes |
+| jobs          | List shell jobs              |
+| bg            | Resume job in background     |
+| fg            | Bring job to foreground      |
+| nice          | Start process with priority  |
+| renice        | Change process priority      |
+| free -h       | Display memory usage         |
+| uptime        | Display system uptime        |
+
+### Level 6 — Networking
+
+```bash
+ip addr
+ip link
+ip route
+ping -c 4 8.8.8.8
+curl https://example.com
+wget https://example.com/file
+ss -tuln
+ss -tulpn
+hostname -I
+traceroute example.com
+dig example.com
+nslookup example.com
+whois example.com
+```
+
+### Level 7 — Storage & System Administration
+
+```bash
+lsblk
+blkid
+df -h
+du -sh *
+mount
+umount /mnt
+findmnt
+fdisk -l
+parted -l
+lsof
+dmesg
+journalctl
+journalctl -xe
+systemctl status ssh
+systemctl start ssh
+systemctl stop ssh
+systemctl enable ssh
+systemctl disable ssh
+```
+
+### Level 8 — Advanced Linux Commands
+
+```bash
+find / -name "*.conf" 2>/dev/null
+grep -R "keyword" /etc
+awk '{print $1}' file.txt
+sed 's/old/new/g' file.txt
+sort file.txt
+uniq file.txt
+cut -d: -f1 /etc/passwd
+xargs
+tee output.txt
+tar -czvf archive.tar.gz folder/
+tar -xzvf archive.tar.gz
+gzip file.txt
+gunzip file.txt.gz
+rsync -av source/ destination/
+ssh user@host
+scp file.txt user@host:/tmp/
+crontab -e
+watch -n 2 'free -h'
+strace command
+```
+
+### 02\. TERMUX COMMANDS
+
+![Self Hosting to the Xtreme | Server on Mobile?! | by Angad Sharma | GDG VIT Vellore | Medium](https://images.openai.com/static-rsc-4/fsN85IgkI7ECPWbpNj6kRBbAZ29sgdGxbHf0KRUUcXzZZYVfDRT1BeX959KwD7Go7wo5yprVUcgnmO-IlMcDvf86LG3AWsd7QV1BdMz3og6zJcdrYJe4XYZ_rU4X0XNLVVxy_kNBIpmRHrGdP14tDM3DUsppASjLXTZdEGkmMBOPnf3hKYstaid0MVnm6wDj?purpose=fullsize)
+
+### Level 1 — Basic Termux Commands
+
+```bash
+termux-info
+pwd
+ls
+ls -la
+cd
+cd ..
+clear
+whoami
+uname -a
+date
+history
+exit
+```
+
+### Level 2 — Package Management
+
+```bash
+pkg update
+pkg upgrade
+pkg install git
+pkg install python
+pkg install nano
+pkg install vim
+pkg install curl
+pkg install wget
+pkg install openssh
+pkg install clang
+pkg install nodejs
+pkg install zip
+pkg install unzip
+pkg list-installed
+pkg search python
+pkg show python
+pkg uninstall package
+```
+
+### Level 3 — Android Storage Management
+
+```bash
+termux-setup-storage
+ls ~/storage
+ls ~/storage/shared
+cd ~/storage/shared
+mkdir projects
+touch test.txt
+cp test.txt ~/storage/shared/
+mv test.txt new.txt
+rm new.txt
+```
+
+### Level 4 — Termux Networking
+
+```bash
+ip addr
+ip route
+ping -c 4 google.com
+curl -I https://example.com
+wget https://example.com/file
+ssh user@192.168.1.10
+ss -tuln
+getprop
+```
+
+### Level 5 — Development Environment
+
+```bash
+python --version
+python
+python script.py
+pip --version
+pip install requests
+git --version
+git clone https://github.com/user/repo.git
+git status
+git pull
+node --version
+npm --version
+clang --version
+```
+
+### Level 6 — Advanced Termux
+
+```bash
+termux-wake-lock
+termux-wake-unlock
+termux-battery-status
+termux-wifi-connectioninfo
+termux-location
+termux-notification
+termux-clipboard-get
+termux-clipboard-set "Hello"
+termux-open file.pdf
+termux-open-url https://example.com
+```
+
+Note: Advanced `termux-*` commands require the appropriate Termux:API application and package. Some Android features also require permissions.
+
+### 03\. POWERSHELL COMMANDS
+
+![](https://images.openai.com/static-rsc-4/NuZGH1nzJNn_d-w7Z9N1yfOP1zTaP1TbsTZxpZBOAjtBrwFjPWKRM21EwwJbw39QyiEdjFk1s6WUsl44j9zc0tWD2amKBQkriHTWopgkuP3kyPrEAnMfkt5Qm0iNjBX0NIp7WEufdfW4vtDARw74DOwSg6me3EqActYmg7QnEnC_6XP_E_7k6QYrb-SR-grd?purpose=fullsize)
+
+### Level 1 — Basic Commands
+
+| Command          | Description            |
+| ---------------- | ---------------------- |
+| Get-Location     | Current location       |
+| Get-ChildItem    | List files and folders |
+| Set-Location     | Change directory       |
+| Clear-Host       | Clear screen           |
+| Get-Date         | Display date and time  |
+| Get-Help         | Display help           |
+| Get-History      | Show command history   |
+| Get-Command      | Find commands          |
+| Get-Alias        | List aliases           |
+| Get-ComputerInfo | System information     |
+| Get-Process      | List processes         |
+| Get-Service      | List services          |
+
+### Level 2 — File Management
+
+```powershell
+New-Item file.txt -ItemType File
+New-Item folder -ItemType Directory
+Copy-Item file.txt backup.txt
+Move-Item file.txt C:\Temp\
+Rename-Item file.txt new.txt
+Remove-Item file.txt
+Get-Content file.txt
+Set-Content file.txt "Hello"
+Add-Content file.txt "New Line"
+Clear-Content file.txt
+Test-Path file.txt
+```
+
+### Level 3 — System Administration
+
+```powershell
+Get-ComputerInfo
+Get-CimInstance Win32_OperatingSystem
+Get-CimInstance Win32_Processor
+Get-CimInstance Win32_PhysicalMemory
+Get-Volume
+Get-Disk
+Get-Partition
+Get-Process
+Stop-Process -Name notepad
+Start-Process notepad
+Get-Service
+Start-Service ServiceName
+Stop-Service ServiceName
+Restart-Service ServiceName
+```
+
+### Level 4 — Networking
+
+```powershell
+Get-NetIPConfiguration
+Get-NetIPAddress
+Get-NetRoute
+Test-Connection google.com
+Test-NetConnection google.com -Port 443
+Resolve-DnsName example.com
+Get-NetTCPConnection
+Get-NetAdapter
+ipconfig /all
+netstat -ano
+```
+
+### Level 5 — Advanced PowerShell
+
+```powershell
+Get-Command -Module Microsoft.PowerShell.Management
+Get-Help Get-Process -Full
+Get-ExecutionPolicy
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+Get-ChildItem -Recurse
+Where-Object
+ForEach-Object
+Select-Object
+Sort-Object
+Group-Object
+Measure-Object
+Export-Csv
+Import-Csv
+ConvertTo-Json
+ConvertFrom-Json
+Get-Content file.txt | Select-String "error"
+```
+
+### Level 6 — PowerShell Scripting
+
+```powershell
+$Name = "IQ_MAXx"
+
+if ($Name -eq "IQ_MAXx") {
+    Write-Output "Project Found"
+}
+
+for ($i = 1; $i -le 5; $i++) {
+    Write-Output $i
+}
+
+function Get-SystemStatus {
+    Get-ComputerInfo
+}
+
+Get-SystemStatus
+```
+
+### 04\. BASH COMMANDS
+
+![A Simple Guide to Linux Shell Scripting With Bash | Petri](https://images.openai.com/static-rsc-4/Kct70XXzxidTOS5brIffxZhTIpSyu23N-IHuAYp9N-kGSkx-RjPawAaVI-WdIWUdhAiQvjseSHav8yxgxaCEwGJwuJqEwbr98d8tdg39-OxO-X1gdyZAr-RnrcLC8qolHkFr2Z_gahbPzm_8-OpgvyldkwVa4OAhWbBbvtY-E25rQPdBJn0TBBsVwKfgyWWn?purpose=fullsize)
+
+### Level 1 — Basic Bash
+
+```bash
+echo "Hello World"
+pwd
+ls
+cd
+clear
+whoami
+history
+type ls
+which bash
+bash --version
+```
+
+### Level 2 — Variables
+
+```bash
+NAME="IQ_MAXx"
+VERSION="1.0"
+echo "$NAME"
+echo "$VERSION"
+```
+
+### Level 3 — Conditions
+
+```bash
+#!/usr/bin/env bash
+
+NUMBER=10
+
+if [ "$NUMBER" -gt 5 ]; then
+    echo "Number is greater than 5"
+else
+    echo "Number is 5 or less"
+fi
+```
+
+### Level 4 — Loops
+
+```bash
+for i in {1..5}; do
+    echo "$i"
+done
+
+COUNT=1
+
+while [ "$COUNT" -le 5 ]; do
+    echo "$COUNT"
+    ((COUNT++))
+done
+```
+
+### Level 5 — Functions
+
+```bash
+#!/usr/bin/env bash
+
+greet() {
+    local name="$1"
+    echo "Welcome, $name"
+}
+
+greet "IQ_MAXx"
+```
+
+### Level 6 — Advanced Bash
+
+```bash
+set -euo pipefail
+
+trap 'echo "Script interrupted"' INT
+
+command -v python
+read -r -p "Enter your name: " NAME
+printf "Hello, %s\n" "$NAME"
+
+find . -type f
+grep -R "keyword" .
+awk '{print $1}' file.txt
+sed -n '1,10p' file.txt
+```
+
+### Level 7 — Bash Automation
+
+```bash
+#!/usr/bin/env bash
+
+SOURCE="$HOME/Documents"
+BACKUP="$HOME/backup"
+
+mkdir -p "$BACKUP"
+
+if [ -d "$SOURCE" ]; then
+    cp -r "$SOURCE/." "$BACKUP/"
+    echo "Backup completed"
+else
+    echo "Source directory not found"
+fi
+```
+
+### 05\. Professional Advanced Topics
+
+These are the concepts that separate someone who merely knows commands from someone who can engineer command-line tools.
+
+| Area               | Advanced concepts                          |
+| ------------------ | ------------------------------------------ |
+| Shell Architecture | Shell processes, environments, subshells   |
+| I/O                | stdin, stdout, stderr, redirection         |
+| Pipelines          | Pipes, filters, process substitution       |
+| Automation         | Scheduled tasks, cron, task automation     |
+| Security           | Permissions, ACLs, SSH, audit logs         |
+| Networking         | TCP/IP, DNS, routing, sockets              |
+| Storage            | Filesystems, partitions, mounts            |
+| Scripting          | Functions, error handling, arguments       |
+| Development        | Git, compilers, interpreters               |
+| Debugging          | Trace, profiling, logs                     |
+| CLI Engineering    | Argument parsing, help systems, exit codes |
+| TUI Engineering    | Interactive terminal interfaces            |
+
+### 06\. Practical Mastery Projects
+
+* Build a Linux system information CLI.
+
+* Create an automated backup utility using Bash.
+
+* Build an Android storage analyzer using Termux.
+
+* Create a PowerShell Windows system monitor.
+
+* Build a cross-platform file management CLI.
+
+* Create a network diagnostic utility.
+
+* Build a process monitoring TUI.
+
+* Create a package management helper.
+
+* Develop a log analysis engine.
+
+* Build your own professional CLI framework.
+
+### 07\. Important Safety Rules
+
+* Never execute unknown shell scripts as root.
+
+* Understand `rm -rf` before using it.
+
+* Avoid running unverified commands copied from the internet.
+
+* Review PowerShell execution policies before changing them.
+
+* Never expose SSH private keys or credentials.
+
+* Do not scan or access networks without authorization.
+
+* Test destructive operations in a virtual machine or disposable environment first.
+
+### 08\. Recommended learning order
+
+* Linux Fundamentals
+
+    Learn filesystem navigation, permissions, package management and processes.
+
+* Bash Programming
+
+    Learn variables, conditions, loops, functions and automation.
+
+* Termux
+
+    Practice Linux-style command-line workflows on Android.
+
+* PowerShell
+
+    Learn Windows administration, object pipelines and scripting.
+
+* Advanced CLI Engineering
+
+    Build real tools, command parsers, TUI applications and automation frameworks.
+
+One technical correction: No handbook can realistically contain every Linux, Termux, PowerShell and Bash command. Commands also change across distributions and versions. This is a structured core reference, not an exhaustive command inventory.
+
+For authoritative documentation:
+
+* [GNU Bash Manual](https://www.gnu.org/software/bash/manual/?utm_source=chatgpt.com)
+
+* [Linux Kernel Documentation](https://www.kernel.org/doc/?utm_source=chatgpt.com)
+
+* [Termux Official Documentation](https://termux.dev/en/?utm_source=chatgpt.com)
+
+* [Microsoft PowerShell Documentation](https://learn.microsoft.com/en-us/powershell/?utm_source=chatgpt.com)
+
+* [Linux Manual Pages](https://www.man7.org/linux/man-pages/?utm_source=chatgpt.com)
+
+My recommendation: Turn this into a proper 4-part master handbook with 1,000+ carefully selected command examples, syntax, parameters, expected outputs, practical exercises and real-world use cases. That will be substantially more valuable than memorizing a huge list of command names.
