@@ -470,7 +470,7 @@ def live_box_close():
 #  BRAND BANNER - IQchain logo, version and developer credit             #
 # ---------------------------------------------------------------------- #
 APP_NAME = "IQchain"
-APP_VERSION = "v0.01"
+APP_VERSION = "v4.00"
 APP_AUTHOR = "IQmaxx (DK)"
 APP_TAG = "(tunnel)"
 
