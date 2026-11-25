@@ -24,6 +24,7 @@ this script installs that binary automatically if it's missing.
 """
 import argparse
 import os
+import signal
 import platform
 import re
 import shutil
@@ -40,6 +41,19 @@ import urllib.request
 from collections import deque
 from pathlib import Path
 from urllib.parse import urlparse
+import atexit
+import codecs
+import time
+import unicodedata
+
+try:
+    import termios            # Linux / macOS / Termux
+except ImportError:
+    termios = None
+try:
+    import msvcrt             # Windows
+except ImportError:
+    msvcrt = None
 
 GITHUB_RELEASES = "https://github.com/cloudflare/cloudflared/releases/latest/download"
 TRYCLOUDFLARE_RE = re.compile(r"https://[a-zA-Z0-9\-]+\.trycloudflare\.com")
@@ -49,15 +63,19 @@ PRINT_LOCK = threading.Lock()
 # like htop, vim and less use. Switching to the alternate buffer makes this
 # program take over the whole tab/window like a real application; leaving
 # it instantly restores the user's previous terminal content untouched.
-_ALT_SCREEN_ON = "\033[?1049h\033[2J\033[H\033[?25l"   # switch buffer + clear + home + hide cursor
-_ALT_SCREEN_OFF = "\033[?25h\033[?1049l"  # show cursor + switch buffer back
+_ALT_SCREEN_ON = "\033[?1049h\033[2J\033[H"                 # switch buffer + clear + home
+_ALT_SCREEN_OFF = "\033[0m\033[?7h\033[?25h\033[?1049l"     # reset + wrap on + cursor on + switch back
+
+_ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-_]")
+_CTRL_RE = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 
 _SCREEN = {
-    "active": False,          # is the full-screen dashboard currently drawn?
-    "header": [],             # plain status lines pinned at the top
-    "log": deque(maxlen=1000),  # cloudflared output history (plain text)
+    "active": False,          # is the full-screen view currently drawn?
+    "alt": False,             # are we inside the alternate screen buffer?
+    "size": None,             # last (cols, rows) the frame was drawn for
+    "header": [],             # plain status lines shown under the logo
+    "log": deque(maxlen=1000),  # activity history (plain text lines)
 }
-
 
 # ====================================================================== #
 #  UI FRAMEWORK - white / grey text on the terminal's own background,    #
@@ -132,113 +150,319 @@ def print_box(lines, title=None, color=None):
     sys.stdout.flush()
 
 
+def _is_tty():
+    try:
+        return sys.stdout.isatty()
+    except Exception:
+        return False
+
+
 def _term_size():
-    """(columns, rows) of the real terminal, with a safe fallback for
-    environments with no real tty (works the same on Termux, Linux,
-    macOS and Windows)."""
-    sz = shutil.get_terminal_size(fallback=(80, 24))
-    return max(sz.columns, 40), max(sz.lines, 10)
+    """(columns, rows) of the real terminal. Asked from the OS on every
+    call (never from stale COLUMNS/LINES variables), so a zoom or a resize
+    is always noticed."""
+    try:
+        sz = os.get_terminal_size(sys.stdout.fileno())
+    except Exception:
+        sz = shutil.get_terminal_size(fallback=(80, 24))
+    return max(sz.columns, 20), max(sz.lines, 4)
 
 
+# ---- text helpers: every row is measured in terminal CELLS, not chars ---- #
+def _cw(text):
+    n = 0
+    for ch in text:
+        if unicodedata.combining(ch):
+            continue
+        n += 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
+    return n
+
+
+def _clean(text):
+    """Strips escape codes / control characters from any text before it is
+    drawn. Anything that comes from outside (http requests, cloudflared
+    output) can therefore never move the cursor or break the frame."""
+    text = _ANSI_RE.sub("", str(text)).expandtabs(4)
+    return _CTRL_RE.sub("", text)
+
+
+def _fit(text, width):
+    out, n = "", 0
+    for ch in text:
+        w = _cw(ch)
+        if n + w > width:
+            break
+        out += ch
+        n += w
+    return out
+
+
+def _wrap(text, width, indent=0):
+    """Hard-wraps by cell width (long URLs / paths never overflow the box)."""
+    text = _clean(text)
+    out, cur, curw, lim, pre = [], "", 0, width, ""
+    for ch in text:
+        w = _cw(ch)
+        if curw + w > lim and cur:
+            out.append(pre + cur)
+            cur, curw, lim, pre = "", 0, max(width - indent, 1), " " * indent
+        cur += ch
+        curw += w
+    out.append(pre + cur)
+    return out
+
+
+# ---- keyboard noise: no echo, no "^[[A" garbage while the dashboard runs -- #
+_TERM_SAVED = {"attrs": None}
+
+
+def _echo_off():
+    """Touch-scrolling / arrow keys send escape codes to the program. With
+    echo on, the terminal prints them as ^[[A^[[B ... over the screen.
+    Echo and line mode are switched off while the dashboard is up (Ctrl+C
+    still works) and restored exactly afterwards."""
+    if termios is None:
+        return
+    try:
+        if not sys.stdin.isatty():
+            return
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+        new = termios.tcgetattr(fd)
+        new[3] &= ~(termios.ECHO | termios.ICANON)
+        new[6][termios.VMIN] = 0
+        new[6][termios.VTIME] = 0
+        termios.tcsetattr(fd, termios.TCSADRAIN, new)
+        _TERM_SAVED["attrs"] = old
+    except Exception:
+        pass
+
+
+def _echo_restore():
+    old = _TERM_SAVED["attrs"]
+    if old is None or termios is None:
+        return
+    _TERM_SAVED["attrs"] = None
+    try:
+        fd = sys.stdin.fileno()
+        termios.tcflush(fd, termios.TCIFLUSH)      # throw away unread keys
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    except Exception:
+        pass
+
+
+def _drain_input():
+    """Reads and discards any pending keystrokes so they never pile up and
+    leak into the shell after the program exits."""
+    try:
+        if msvcrt is not None:
+            while msvcrt.kbhit():
+                msvcrt.getwch()
+        elif termios is not None and sys.stdin.isatty():
+            import select
+            fd = sys.stdin.fileno()
+            while select.select([fd], [], [], 0)[0]:
+                if not os.read(fd, 1024):
+                    break
+    except Exception:
+        pass
+
+
+# ---- full-screen app --------------------------------------------------- #
 def enter_app_screen():
-    """Switches into the alternate screen buffer so the program visually
-    takes over the whole tab/window, like htop or vim do. No-op when
-    color/tty support isn't available (CI logs, dumb terminals) so it
-    never breaks a non-interactive run."""
-    if _color_enabled():
+    """Switches into the alternate screen buffer so the program takes over
+    the whole tab/window like htop or vim. Skipped when output is not a
+    terminal (pipes, CI logs)."""
+    if _is_tty() and not _SCREEN["alt"]:
+        _SCREEN["alt"] = True
         sys.stdout.write(_ALT_SCREEN_ON)
         sys.stdout.flush()
+        # Echo is switched off for the program's entire run, not just the
+        # dashboard: a touch-scroll or pinch-zoom can fire escape sequences
+        # at ANY step (even one that never reads input, like this check),
+        # and with the terminal's own echo on those get printed as raw
+        # "^[[A^[[B..." before any of this program's code sees them.
+        # safe_input() does its own manual, filtered echo while reading
+        # text, so turning the terminal's echo off everywhere is safe.
+        _echo_off()
+        atexit.register(leave_app_screen)
 
 
 def leave_app_screen():
-    """Restores the user's normal terminal exactly as it was before the
-    program started - their previous scrollback is untouched."""
-    if _color_enabled():
-        sys.stdout.write(_ALT_SCREEN_OFF)
-        sys.stdout.flush()
-    _SCREEN["active"] = False
+    """Restores the user's normal terminal exactly as it was before."""
+    with PRINT_LOCK:
+        _SCREEN["active"] = False
+        if _SCREEN["alt"]:
+            _SCREEN["alt"] = False
+            try:
+                sys.stdout.write(_ALT_SCREEN_OFF)
+                sys.stdout.flush()
+            except Exception:
+                pass
+    _echo_restore()
 
 
 def set_dashboard_header(lines):
-    """Plain-text lines (no color codes) pinned at the top of the
-    full-screen dashboard, above the scrolling activity log."""
+    """Plain-text status lines shown under the IQchain logo block."""
     _SCREEN["header"] = lines
 
 
 def start_dashboard():
-    """Switches from the normal step-by-step setup screens into the
-    full-screen live dashboard: a status header + a green activity box
-    that fills the rest of the terminal and scrolls like htop/top."""
-    _SCREEN["active"] = True
-    _redraw_dashboard()
+    """Switches from the step-by-step setup screens into the full-screen
+    view: IQchain logo + developer credit pinned on top, status lines under
+    it, and the scrolling activity lines below. A small watcher thread
+    re-draws the frame whenever the terminal is zoomed / resized, and
+    quietly swallows stray key presses."""
+    if not (_is_tty() and _SCREEN["alt"]):
+        # no real terminal -> plain, ordinary printed lines
+        for line in _SCREEN["header"]:
+            print(_clean(line))
+        return
+    with PRINT_LOCK:                              # echo is already off, set by
+        _SCREEN["active"] = True                  # enter_app_screen() at startup
+        _SCREEN["size"] = None
+        sys.stdout.write("\033[?25l\033[?7l")     # hide cursor, no auto-wrap
+        _redraw_dashboard()
+    sig = getattr(signal, "SIGWINCH", None)       # instant repaint the moment
+    if sig is not None:                           # the terminal reports a resize
+        try:
+            signal.signal(sig, lambda *_: _on_resize_signal())
+        except Exception:
+            pass
+    threading.Thread(target=_watch_screen, daemon=True).start()
 
 
-def _redraw_dashboard():
-    """Repaints the whole terminal: cursor home, clear, header block, then
-    an activity block sized to use every remaining row and column, newest
-    line at the bottom. Re-measures the terminal every call, so resizing
-    the window is handled automatically. Drawn as one continuous frame
-    with clean unicode straight lines (the header, the title and the log
-    are separated by T-junctions rather than stacked separate boxes) -
-    this is the one border in the program drawn this way; every other
-    box (step/info/error boxes from print_box) keeps its plain style."""
-    import textwrap
-
-    cols, rows = _term_size()
-    w = max(min(cols - 2, 200), 40)
-    inner = w - 4
-    color = C.OK
-
-    def rule(left, right):
-        return f"{color}{left}{'─' * (w - 2)}{right}{C.RESET}"
-
-    def content_row(text):
-        pad = max(inner - len(text), 0)
-        return f"{color}│{C.RESET} {C.WHITE}{text}{' ' * pad} {color}│{C.RESET}"
-
-    out = ["\033[H\033[2J"]  # cursor to top-left + clear the whole screen
-
-    out.append(rule("┌", "┐"))
-    for line in _SCREEN["header"]:
-        for piece in (textwrap.wrap(line, width=inner) or [""]):
-            out.append(content_row(piece))
-    out.append(rule("├", "┤"))
-
-    title = " LIVE ACTIVITY "
-    pad = max(w - 2 - len(title), 0)
-    left, right = pad // 2, pad - pad // 2
-    out.append(f"{color}│{C.RESET}{C.BOLD}{color}{' ' * left}{title}{' ' * right}{C.RESET}{color}│{C.RESET}")
-    out.append(rule("├", "┤"))
-
-    available = max(rows - len(out) - 1, 0)  # rows left before the bottom border
-    wrapped_all = []
-    for line in _SCREEN["log"]:
-        wrapped_all.extend(textwrap.wrap(line, width=inner) or [""])
-    visible = wrapped_all[-available:] if available else []
-    for _ in range(max(available - len(visible), 0)):
-        out.append(f"{color}│{' ' * (w - 2)}│{C.RESET}")
-    for piece in visible:
-        out.append(content_row(piece))
-    out.append(rule("└", "┘"))
-
-    sys.stdout.write("\n".join(out))
-    sys.stdout.flush()
-
-
-def live_box_line(text):
-    """Records one line of live activity (cloudflared's own output). While
-    the full-screen dashboard is active it repaints the whole screen so
-    the newest line appears at the bottom, like htop; before that it is
-    simply kept so a failure can still show the last few lines as before -
-    no change to that existing behaviour."""
+def _on_resize_signal():
     with PRINT_LOCK:
-        _SCREEN["log"].append(text)
         if _SCREEN["active"]:
             _redraw_dashboard()
 
 
+def _watch_screen():
+    tick = 0
+    while True:
+        time.sleep(0.2)
+        _drain_input()
+        tick += 1
+        with PRINT_LOCK:
+            if not _SCREEN["active"]:
+                return
+            # redraw on any size change, and once a second to self-heal
+            if _term_size() != _SCREEN["size"] or tick % 5 == 0:
+                _redraw_dashboard()
+
+
+def _build_frame(cols, rows):
+    """Returns the list of screen rows (already colored) for a terminal of
+    `cols` x `rows`. Every row is exactly the same width and the list is
+    never taller than the terminal, so the frame cannot wrap, overflow or
+    scroll - at any zoom level."""
+    w = max(min(cols - 1, 160), 30)
+    inner = w - 4
+    B, R = C.ORANGE, C.RESET
+
+    def rule(left, right):
+        return f"{B}{left}{'─' * (w - 2)}{right}{R}"
+
+    def line(text="", color=None, bold=False, center=False):
+        text = _fit(text, inner)
+        gap = inner - _cw(text)
+        left = gap // 2 if center else 0
+        style = (C.BOLD if bold else "") + (C.WHITE if color is None else color)
+        return f"{B}│{R} {style}{' ' * left}{text}{' ' * (gap - left)}{R} {B}│{R}"
+
+    brand = f"{APP_NAME}  {APP_VERSION}"
+    credit = f"developed by {APP_AUTHOR}"
+    short = f"{brand}  {APP_TAG}"
+    if _cw(short) > inner:
+        short = f"{APP_NAME} {APP_VERSION}"
+
+    compact_head = [rule("┌", "┐"),
+                    line(short, C.ORANGE, True, True),
+                    line(credit, C.GREY, False, True),
+                    rule("├", "┤")]
+    full_head = None
+    logo = _logo_lines()
+    if len(logo[0]) <= inner:
+        full_head = [rule("┌", "┐"), line("")]
+        full_head += [line(g, C.ORANGE, True, True) for g in logo]
+        full_head += [line(""),
+                      line(brand, C.WHITE, False, True),
+                      line(APP_TAG, C.ORANGE, True, True),
+                      line(credit, C.GREY, False, True),
+                      rule("├", "┤")]
+
+    status = [line(p) for s in _SCREEN["header"] for p in _wrap(s, inner)]
+    bottom = rule("└", "┘")
+
+    # big logo only when there is still room for a few activity rows
+    head = compact_head
+    if full_head and rows - (len(full_head) + len(status) + 1) >= 3:
+        head = full_head
+
+    avail = rows - len(head) - len(status) - 1          # rows left for the log
+    if avail < 2:                                        # tiny window: no log area
+        body = status[:max(len(status) + min(avail, 0), 0)]
+        return (head + body + [bottom])[:rows]
+
+    want_title = avail >= 3
+    title_rows = [rule("├", "┤"), line("LIVE ACTIVITY", C.ORANGE, True, True)] if want_title else []
+    log_rows = avail - 1 - (2 if want_title else 0)      # one row is the divider
+
+    shown = []                                           # newest at the bottom
+    for entry in reversed(_SCREEN["log"]):
+        txt = _clean(entry)
+        if txt.startswith(("[error]", "[warn]")):
+            color = C.ERR
+        elif txt.startswith("[saved]"):
+            color = C.ORANGE
+        else:
+            color = C.WHITE
+        shown = [(_fit(txt, inner), color)] + shown     # one entry = one row
+        if len(shown) >= log_rows:
+            break
+    shown = shown[-log_rows:] if log_rows > 0 else []
+    blanks = [line("")] * max(log_rows - len(shown), 0)
+    rows_out = head + status + title_rows + [rule("├", "┤")] + blanks
+    rows_out += [line(seg, color) for seg, color in shown] + [bottom]
+    return rows_out[:rows]
+
+
+def _redraw_dashboard():
+    """Paints the frame row by row at absolute screen positions (no
+    newlines, so the screen can never scroll). Called with PRINT_LOCK held."""
+    cols, rows = _term_size()
+    frame = _build_frame(cols, rows)
+    out = []
+    if _SCREEN["size"] != (cols, rows):
+        out.append("\033[2J")               # size changed: wipe leftovers once
+    _SCREEN["size"] = (cols, rows)
+    for i, row in enumerate(frame, 1):
+        out.append(f"\033[{i};1H{row}\033[K")
+    if len(frame) < rows:
+        out.append(f"\033[{len(frame) + 1};1H\033[J")
+    try:
+        sys.stdout.write("".join(out))
+        sys.stdout.flush()
+    except (OSError, ValueError):
+        pass
+
+
+def live_box_line(text, color=None):
+    """Records one line of activity (http hits, saved records, tunnel
+    output). While the full-screen view is active the frame is re-drawn so
+    the newest line appears at the bottom; otherwise it prints normally."""
+    text = _clean(text)
+    with PRINT_LOCK:
+        _SCREEN["log"].append(text)
+        if _SCREEN["active"]:
+            _redraw_dashboard()
+        else:
+            print(f"{color or C.WHITE}{text}{C.RESET}")
+
+
 def live_box_close():
-    """Leaves the full-screen dashboard, restoring the real terminal."""
+    """Leaves the full-screen view, restoring the real terminal."""
     leave_app_screen()
 
 
@@ -248,6 +472,7 @@ def live_box_close():
 APP_NAME = "IQchain"
 APP_VERSION = "v0.01"
 APP_AUTHOR = "IQmaxx (DK)"
+APP_TAG = "(tunnel)"
 
 # Bold dot-matrix wordmark, 6 rows tall, letters hand-aligned so every
 # row is exactly the same length - verified column by column, so it
@@ -344,7 +569,7 @@ def ask_choice(message, options):
     print_box([message, "", opt_line], title="WHAT WOULD YOU LIKE TO DO?", color=C.ORANGE)
     valid = {k.lower() for k, _ in options}
     while True:
-        choice = input(f"{C.GREY}> {C.RESET}").strip().lower()
+        choice = safe_input(f"{C.GREY}> {C.RESET}").strip().lower()
         if choice in valid:
             return choice
         sys.stdout.write(f"{C.ERR}  please pick one of: {', '.join(k.upper() for k, _ in options)}{C.RESET}\n")
@@ -386,6 +611,115 @@ def setup_console():
                     )
         except Exception:
             pass
+
+
+def _consume_escape(fd):
+    """Called right after an ESC (0x1b) byte. A touchscreen terminal
+    (Termux included) can fire arrow-key, mouse-tracking or bracketed-paste
+    escape sequences on a swipe, pinch-zoom or stray tap. Those always
+    arrive as a burst starting with ESC, so: wait up to 100ms for the next
+    byte - nothing more means a lone Escape key press, nothing to do; a
+    '[' or 'O' means a CSI/SS3 sequence, so keep reading until its final
+    byte and throw the whole thing away. Either way, not one byte of it is
+    echoed or inserted into the typed text."""
+    old = termios.tcgetattr(fd)
+    tmp = termios.tcgetattr(fd)
+    tmp[6][termios.VMIN] = 0
+    tmp[6][termios.VTIME] = 1
+    termios.tcsetattr(fd, termios.TCSANOW, tmp)
+    try:
+        nxt = os.read(fd, 1)
+        if nxt in (b"[", b"O"):
+            for _ in range(32):                 # hard cap: never hang on junk
+                b = os.read(fd, 1)
+                if not b or 0x40 <= b[0] <= 0x7E:
+                    break
+    finally:
+        termios.tcsetattr(fd, termios.TCSANOW, old)
+
+
+def _safe_input_posix(prompt):
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    new = termios.tcgetattr(fd)
+    new[3] &= ~(termios.ECHO | termios.ICANON)
+    new[6][termios.VMIN] = 1
+    new[6][termios.VTIME] = 0
+    termios.tcsetattr(fd, termios.TCSADRAIN, new)
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="ignore")
+    buf = []
+    try:
+        while True:
+            ch = os.read(fd, 1)
+            if not ch:
+                raise EOFError
+            if ch == b"\x1b":
+                _consume_escape(fd)             # swallow it, never echoed
+                continue
+            if ch in (b"\r", b"\n"):
+                sys.stdout.write("\n")
+                break
+            if ch == b"\x03":
+                raise KeyboardInterrupt
+            if ch == b"\x04" and not buf:
+                raise EOFError
+            if ch in (b"\x7f", b"\x08"):
+                if buf:
+                    buf.pop()
+                    sys.stdout.write("\b \b")
+                continue
+            text = decoder.decode(ch)
+            if text and (text.isprintable() or text == " "):
+                buf.append(text)
+                sys.stdout.write(text)
+            sys.stdout.flush()
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    return "".join(buf)
+
+
+def _safe_input_windows(prompt):
+    buf = []
+    while True:
+        ch = msvcrt.getwch()
+        if ch in ("\r", "\n"):
+            sys.stdout.write("\n")
+            break
+        if ch == "\x03":
+            raise KeyboardInterrupt
+        if ch == "\x08":
+            if buf:
+                buf.pop()
+                sys.stdout.write("\b \b")
+            continue
+        if ch in ("\x00", "\xe0"):
+            msvcrt.getwch()                     # swallow arrow/function scan code
+            continue
+        if ch.isprintable():
+            buf.append(ch)
+            sys.stdout.write(ch)
+        sys.stdout.flush()
+    return "".join(buf)
+
+
+def safe_input(prompt=""):
+    """Drop-in replacement for input(). A plain input() relies on the
+    terminal's own line editing and echo, so a swipe, pinch-zoom or stray
+    touch that fires escape sequences gets echoed and inserted verbatim
+    (the '^[B^[B...' garbage). safe_input reads and echoes one keystroke
+    at a time itself, so it can recognize and discard a whole escape
+    sequence before it ever reaches the screen or the typed text - only
+    what the person actually typed comes back."""
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    if not sys.stdin.isatty() or (termios is None and msvcrt is None):
+        return input()                          # no real terminal: plain input() is fine
+    try:
+        if msvcrt is not None:
+            return _safe_input_windows(prompt)
+        return _safe_input_posix(prompt)
+    except (termios.error if termios else Exception, OSError):
+        return input()                          # unusual terminal: fall back safely
 
 
 class Spinner:
@@ -566,7 +900,7 @@ def ask_local_url(cli_value):
     raw = cli_value
     while True:
         if not raw:
-            raw = input(f"{C.WHITE}Local URL (e.g. localhost:3000): {C.RESET}").strip()
+            raw = safe_input(f"{C.WHITE}Local URL (e.g. localhost:3000): {C.RESET}").strip()
         candidate = raw
         if not re.match(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://", candidate):
             candidate = "http://" + candidate
@@ -604,7 +938,7 @@ def run_tunnel(cloudflared_path, local_url):
     try:
         proc = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, bufsize=1,
+            text=True, encoding="utf-8", errors="replace", bufsize=1,
         )
     except Exception as e:
         ask_choice(f"could not start cloudflared - {e}", [("q", "quit")])
@@ -619,6 +953,8 @@ def run_tunnel(cloudflared_path, local_url):
             state["lines"].append(text)
             if _SCREEN["active"]:
                 live_box_line(text)
+            else:
+                _SCREEN["log"].append(_clean(text))
             m = TRYCLOUDFLARE_RE.search(line)
             if m and not state["public_url"]:
                 state["public_url"] = m.group(0)
@@ -655,13 +991,12 @@ def run_tunnel(cloudflared_path, local_url):
             "This link works from anywhere while this window stays open.",
             "Switching to full-screen live view ...",
         ],
-        title="TUNNEL IS LIVE", color=C.OK,
+        title="TUNNEL IS LIVE", color=C.ORANGE,
     )
 
     # the step-by-step history above disappears here - only the live
     # dashboard (this function's own output) stays on screen from now
     set_dashboard_header([
-        f"{APP_NAME} {APP_VERSION}  (tunnel)",
         f"Local:  {local_url}",
         f"Public: {state['public_url']}",
         "This link works from anywhere while this window stays open.",
